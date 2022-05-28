@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+E:/compuer science material/CS-3_S2/Computer Graphics/Code/project_graphic/main.cpp
+tchar.h
+-
+windows.h
+-
+vector
+-
+iostream
+-
+cmath
+-
+math.h
+-
+fstream
+-
+sstream
+-
+
