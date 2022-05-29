@@ -1264,6 +1264,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                     X_end=LOWORD(lParam);
                     Y_end=HIWORD(lParam);
                     PointClipping(hdc,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
+                    counter=0;
                 }
             }
             //////////////////////////////////////////////////////
