@@ -1231,7 +1231,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                     X_end=LOWORD(lParam);
                     Y_end=HIWORD(lParam);
                     CohenSuth(hdc,X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
-                    Num_of_Points=2;
+                    Num_of_Points=0;
                 }
                 Save_Point x("CohenSuth",X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,0,0,0);
                 Arr_Save_Point.push_back(x);
