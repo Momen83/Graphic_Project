@@ -1,17 +1,17 @@
-/*
-a. Change the background of window to be white 
-b. Try to change the shape of your window mouse 
-c. User must interact with window using mouse only 
-d. Try to make combination between your console and window 
-e. Give me an option to choose shape color before drawing from menu 
-f. Implement item to clear screen from shapes 
-g. Implement save function for all data in screen 
-h. Implement load function to load data from files 
-i. Implement line algorithms [DDA, Midpoint and parametric] 
-j. Implement Circle algorithms (Direct, Polari iterative Polar, midpoint and 
+ /*
+a. Change the background of window to be white
+b. Try to change the shape of your window mouse
+c. User must interact with window using mouse only
+d. Try to make combination between your console and window
+e. Give me an option to choose shape color before drawing from menu
+f. Implement item to clear screen from shapes
+g. Implement save function for all data in screen
+h. Implement load function to load data from files
+i. Implement line algorithms [DDA, Midpoint and parametric]
+j. Implement Circle algorithms (Direct, Polari iterative Polar, midpoint and
 modified Midpoint).
-k. Filling Circle with lines after taking filling quarter from user 
-l. Ellipse Algorithms [Direct and polar] 
+k. Filling Circle with lines after taking filling quarter from user
+l. Ellipse Algorithms [Direct and polar]
 m. Clipping point and line
 */
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -36,7 +36,7 @@ using namespace std; //to make combination between console and my window.
 
 
 string data = "";
-
+LPCSTR curs = IDC_CROSS;  //Initial Mouse Shape Cross.
 int Round(int x)
 {
     return (int)(x+0.5);
@@ -928,12 +928,12 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     /* Use default icon and mouse-pointer */
     wincl.hIcon = LoadIcon (NULL, IDI_APPLICATION);
     wincl.hIconSm = LoadIcon (NULL, IDI_APPLICATION);
-    wincl.hCursor = LoadCursor (NULL, IDC_HAND); //change the shape of mouse to hand instead of arrow
+    wincl.hCursor = LoadCursor (NULL, curs);
     wincl.lpszMenuName = NULL;                 /* No menu */
     wincl.cbClsExtra = 0;                      /* No extra bytes after the window class */
     wincl.cbWndExtra = 0;                      /* structure or the window instance */
     /* Use Windows's default colour as the background of the window */
-    wincl.hbrBackground = (HBRUSH) COLOR_WINDOW; // to make the background white
+    wincl.hbrBackground = CreateSolidBrush(RGB(255,255,255));  /// background color white
 
     /* Register the window class, and if it fails quit the program */
     if (!RegisterClassEx (&wincl))
@@ -1036,6 +1036,18 @@ void addMenu(HWND hwnd)
     AppendMenu(hFillingByCircles,MF_STRING,29,"Blue");
     AppendMenu(hFillingByCircles,MF_STRING,30,"Green");
     AppendMenu(hMenu,MF_POPUP,(UINT_PTR)hFillingByCircles,"Fill Circle by other circles");
+
+
+    HMENU cursorMenu  = CreateMenu();
+    AppendMenu(cursorMenu, MF_STRING, 31, _T("Hand"));
+    AppendMenu(cursorMenu, MF_STRING, 32, _T("Standard arrow"));
+    AppendMenu(cursorMenu, MF_STRING, 33, _T("Crosshair"));
+    AppendMenu(cursorMenu, MF_STRING, 34, _T("Arrow and question mark"));
+    AppendMenu(cursorMenu, MF_STRING, 35, _T("Vertical arrow"));
+    AppendMenu(cursorMenu, MF_STRING, 36, _T("I-beam"));
+    AppendMenu(cursorMenu, MF_STRING, 37, _T("Hourglass"));
+    AppendMenu(hMenu, MF_POPUP, (UINT_PTR) cursorMenu, _T("Cursor"));
+
     SetMenu(hwnd,hMenu);
 }
 int Rc,Gc,Bc;
@@ -1056,152 +1068,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
     HDC hdc = GetDC(hwnd);
     switch (message)                  /* handle the messages */
     {
-        case WM_CREATE:
-            addMenu(hwnd);
-            break;
-        case WM_COMMAND:
-        {
-            switch(wParam){
-                case(0):
-                    cout<< "Saving Process\n\n" ;
-                    Save();
-                    cout<< "Save Done ! \n\n";
-                    break;
-                case(1):
-                    cout<<"Load process\n\n";
-                    Load(hdc);
-                    cout<<"load Done !\n\n";
-                    break;
-                case(2):
-                    m = 2;
-                    cout << "Draw Line by DDA\n\n";
-                    break;
-                case(3):
-                    m=3;
-                    cout << "Draw Line by Mid Point\n\n";
-                    break;
-                case(4):
-                    m =4;
-                    cout << "Draw Line by Parametric\n\n";
-                    break;
-                case (5):
-                    m = 5;
-                    cout<<" Draw Direct ellipse \n\n";
-                    break;
-                case(6):
-                    m =6;
-                    cout<<"Draw polar ellipse \n\n";
-                    break;
-                case (7):
-                    m=7;
-                    cout<<"Draw direct circle \n\n";
-                    break;
-                case(8):
-                    m =8;
-                    cout<<"Draw Polar circle \n\n";
-                    break;
-                case(9):
-                    m = 9;
-                    cout<<"Draw Mid Point circle \n\n";
-                    break;
-                case (26):
-                    m = 26;
-                    cout<<"Draw circle by Modified Mid point \n\n";
-                    break;
-                case(10):
-                    cout<<"Draw by black color \n\n";
-                    c = 0;
-                    break;
-                case (11):
-                    cout<<"Draw by red color \n\n";
-                    c = RGB(255,0,0);
-                    break;
-                case(12):
-                    cout<<"Draw by blue color \n\n";
-                    c = RGB(0,0,255);
-                    break;
-                case (13):
-                    cout<<"Draw by green color \n\n";
-                    c = RGB(0,255,0);
-                    break;
-                case(14):
-                    m= 14;
-                    cout << "Fill circle by the Black color\n\n";
-                    cF = 0;
-                    break;
-                case(15):
-                    m = 15;
-                    cout << "Fill circle by the Red color\n\n";
-                    cF = RGB(255,0,0);
-                    break;
-                case (16):
-                    m = 16;
-                    cout<<"Fill circle by  the blue color \n\n";
-                    cF = RGB(0,0,255);
-                    break;
-                case(17):
-                    m =17;
-                    cout<<"Fill circle by the green color \n\n";
-                    cF = RGB(0,255,0);
-                    break;
-                case (18):
-                    m = 18;
-                    cout<<"Filling Circle with First Quarter \n\n";
-                    quarter=1;
-                    break;
-                case (19):
-                    m = 19;
-                    cout<<"Filling circle with second Quarter \n\n";
-                    quarter = 2;
-                    break;
-                case (20):
-                    m = 20;
-                    cout<<"Filling circle with third Quarter \n\n";
-                    quarter =3;
-                    break;
-                case (21):
-                    m =21;
-                    cout<<"Filling circle with fourth Quarter \n\n";
-                    quarter = 4;
-                    break;
-                case (22):
-                    m = 22;
-                    cout<<"line after clipping \n\n";
-                    break;
-                case (23):
-                    m = 23;
-                    cout<<"clipping point \n\n";
-                    break;
-
-                case(25):
-                    cout <<"Clean the window \n";
-                    Clear();
-                    InvalidateRect(hwnd, NULL, TRUE);
-                    break;
-                case (27):
-                    m = 27;
-                    cout<<"Filling Circle  with other circle in First Quarter \n\n";
-                    quarter=1;
-                    break;
-                case (28):
-                    m = 28;
-                    cout<<"Filling Circle  with other circle in second Quarter \n\n";
-                    quarter = 2;
-                    break;
-                case (29):
-                    m = 29;
-                    cout<<"Filling Circle  with other circle in third Quarter \n\n";
-                    quarter =3;
-                    break;
-                case (30):
-                    m =30;
-                    cout<<"Filling Circle  with other circle in fourth Quarter \n\n";
-                    quarter = 4;
-                    break;
-            }
-        }
-            break;
-
         case WM_LBUTTONDOWN:
         {
             x1 = LOWORD(lParam);
@@ -1716,6 +1582,193 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
             break;
 
+        case WM_CREATE:
+            addMenu(hwnd);
+            break;
+        case WM_COMMAND:
+        {
+            switch(wParam){
+                case(0):
+                    cout<< "Saving Process\n\n" ;
+                    Save();
+                    cout<< "Save Done ! \n\n";
+                    break;
+                case(1):
+                    cout<<"Load process\n\n";
+                    Load(hdc);
+                    cout<<"load Done !\n\n";
+                    break;
+                case(2):
+                    m = 2;
+                    cout << "Draw Line by DDA\n\n";
+                    break;
+                case(3):
+                    m=3;
+                    cout << "Draw Line by Mid Point\n\n";
+                    break;
+                case(4):
+                    m =4;
+                    cout << "Draw Line by Parametric\n\n";
+                    break;
+                case (5):
+                    m = 5;
+                    cout<<" Draw Direct ellipse \n\n";
+                    break;
+                case(6):
+                    m =6;
+                    cout<<"Draw polar ellipse \n\n";
+                    break;
+                case (7):
+                    m=7;
+                    cout<<"Draw direct circle \n\n";
+                    break;
+                case(8):
+                    m =8;
+                    cout<<"Draw Polar circle \n\n";
+                    break;
+                case(9):
+                    m = 9;
+                    cout<<"Draw Mid Point circle \n\n";
+                    break;
+                case (26):
+                    m = 26;
+                    cout<<"Draw circle by Modified Mid point \n\n";
+                    break;
+                case(10):
+                    cout<<"Draw by black color \n\n";
+                    c = 0;
+                    break;
+                case (11):
+                    cout<<"Draw by red color \n\n";
+                    c = RGB(255,0,0);
+                    break;
+                case(12):
+                    cout<<"Draw by blue color \n\n";
+                    c = RGB(0,0,255);
+                    break;
+                case (13):
+                    cout<<"Draw by green color \n\n";
+                    c = RGB(0,255,0);
+                    break;
+                case(14):
+                    m= 14;
+                    cout << "Fill circle by the Black color\n\n";
+                    cF = 0;
+                    break;
+                case(15):
+                    m = 15;
+                    cout << "Fill circle by the Red color\n\n";
+                    cF = RGB(255,0,0);
+                    break;
+                case (16):
+                    m = 16;
+                    cout<<"Fill circle by  the blue color \n\n";
+                    cF = RGB(0,0,255);
+                    break;
+                case(17):
+                    m =17;
+                    cout<<"Fill circle by the green color \n\n";
+                    cF = RGB(0,255,0);
+                    break;
+                case (18):
+                    m = 18;
+                    cout<<"Filling Circle with First Quarter \n\n";
+                    quarter=1;
+                    break;
+                case (19):
+                    m = 19;
+                    cout<<"Filling circle with second Quarter \n\n";
+                    quarter = 2;
+                    break;
+                case (20):
+                    m = 20;
+                    cout<<"Filling circle with third Quarter \n\n";
+                    quarter =3;
+                    break;
+                case (21):
+                    m =21;
+                    cout<<"Filling circle with fourth Quarter \n\n";
+                    quarter = 4;
+                    break;
+                case (22):
+                    m = 22;
+                    cout<<"line after clipping \n\n";
+                    break;
+                case (23):
+                    m = 23;
+                    cout<<"clipping point \n\n";
+                    break;
+
+
+                case(25):
+                    cout <<"Clean the window \n";
+                    Clear();
+                    InvalidateRect(hwnd, NULL, TRUE);
+                    break;
+                case (27):
+                    m = 27;
+                    cout<<"Filling Circle  with other circle in First Quarter \n\n";
+                    quarter=1;
+                    break;
+                case (28):
+                    m = 28;
+                    cout<<"Filling Circle  with other circle in second Quarter \n\n";
+                    quarter = 2;
+                    break;
+                case (29):
+                    m = 29;
+                    cout<<"Filling Circle  with other circle in third Quarter \n\n";
+                    quarter =3;
+                    break;
+                case (30):
+                    m =30;
+                    cout<<"Filling Circle  with other circle in fourth Quarter \n\n";
+                    quarter = 4;
+                    break;
+               case (31):
+                    curs = IDC_HAND;
+                    SetCursor(LoadCursor(NULL,curs));
+                    cout<<"Setting Courser\n";
+                    m = 31;
+                    break;
+                case (32):
+                    curs = IDC_ARROW;
+                    m = 32;
+                    break;
+                case (33):
+                    curs = IDC_CROSS;
+                    m = 33;
+                    break;
+                case (34):
+                    curs = IDC_HELP;
+                    m = 34;
+                    break;
+                case (35):
+                    curs =IDC_UPARROW;
+                    m = 35;
+                    break;
+                case (36):
+                    curs = IDC_IBEAM;
+                    m = 36;
+                    break;
+                case (37):
+                    curs = IDC_WAIT;
+                    m = 37;
+                    break;
+                default:
+                    m = LOWORD(wParam);
+                    break;
+
+            }
+        }
+            break;
+        case WM_SETCURSOR:
+        if (LOWORD(lParam) == HTCLIENT)
+        {
+            SetCursor(LoadCursor(NULL,curs));
+            return TRUE;
+        }
+        break;
         case WM_DESTROY:
             PostQuitMessage (0);       /* send a WM_QUIT to the message queue */
             break;
