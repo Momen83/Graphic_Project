@@ -1,4 +1,4 @@
- /*
+/*
 a. Change the background of window to be white
 b. Try to change the shape of your window mouse
 c. User must interact with window using mouse only
@@ -33,7 +33,18 @@ m. Clipping point and line
 #include<sstream>
 
 using namespace std; //to make combination between console and my window.
-
+struct Vertex
+{
+    double x,y;
+    Vertex(int x1=0,int y1=0)
+    {
+        x=x1;
+        y=y1;
+    }
+};
+typedef vector<Vertex> VertexList;
+typedef bool (*IsInFunc)(Vertex& v,int edge);
+typedef Vertex (*IntersectFunc)(Vertex& v1,Vertex& v2,int edge);
 
 string data = "";
 LPCSTR curs = IDC_CROSS;  //Initial Mouse Shape Cross.
@@ -67,7 +78,7 @@ static point _rightTop;
 static point _rightBottom;
 static point _leftTop;
 
-void Draw8Points(double xc,double yc,double x,double y ,COLORREF c,HDC hdc)
+void Draw8Points(double xc,double yc,double x,double y,COLORREF c,HDC hdc)
 {
     SetPixel(hdc,xc+x,yc+y,c);
     SetPixel(hdc,xc-x,yc+y,c);
@@ -89,10 +100,12 @@ void DrawCircleMidPoint(HDC hdc, double xc, double yc, int R, COLORREF c)
     while (x<y)
     {
         d=(x+1)*(x+1)+ (y-0.5)*(y-0.5) - R*R;
-        if(d<0){
+        if(d<0)
+        {
             x++;
         }
-        else{
+        else
+        {
             x++;
             y--;
         }
@@ -101,7 +114,8 @@ void DrawCircleMidPoint(HDC hdc, double xc, double yc, int R, COLORREF c)
 }
 ////////////////////////////////////////////////////////////////////////
 //////////////DDA Algorithm////////////////////////////////////////////
-void DrawLine_DDA(HDC hdc, int x1,int y1,int x2,int y2,COLORREF c){
+void DrawLine_DDA(HDC hdc, int x1,int y1,int x2,int y2,COLORREF c)
+{
     int dx = x2-x1;
     int dy = y2-y1;
     double slope = (double)dy/(double)dx;
@@ -137,7 +151,8 @@ void DrawLine_DDA(HDC hdc, int x1,int y1,int x2,int y2,COLORREF c){
 
 /////////////////////////////////////////////////////////////////////
 //////////////MIDPOINT ALGORITHM FOR LINE ///////////////////////////
-void BresenhamLine(HDC hdc, int x1,int y1,int x2,int y2,COLORREF c){
+void BresenhamLine(HDC hdc, int x1,int y1,int x2,int y2,COLORREF c)
+{
     int dx=x2-x1;
     int  dy=y2-y1;
     if(abs(dx)>abs(dy))
@@ -244,11 +259,14 @@ void BresenhamLine(HDC hdc, int x1,int y1,int x2,int y2,COLORREF c){
                     y++;
                     SetPixel(hdc,x,y,c);
                 }
-            }}}
+            }
+        }
+    }
 }
 /////////////////////////////////////////////////////////////////////////
 //////////////PARAMETRIC ALGORITHM///////////////////////////////////////
-void DrawLine_Parametric(HDC hdc,int x1,int y1,int x2,int y2,COLORREF c){
+void DrawLine_Parametric(HDC hdc,int x1,int y1,int x2,int y2,COLORREF c)
+{
 
     double dt=(double)1.0/std::max(abs(x2-x1),abs(y2-y1));
     for(double t = 0; t<=1; t+=dt)
@@ -263,7 +281,8 @@ void DrawLine_Parametric(HDC hdc,int x1,int y1,int x2,int y2,COLORREF c){
 }
 /////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-void Draw8point(HDC hdc,int xc,int yc,int x,int y,COLORREF c){
+void Draw8point(HDC hdc,int xc,int yc,int x,int y,COLORREF c)
+{
     SetPixel(hdc,xc+x,yc+y,c);
     SetPixel(hdc,xc+x,yc-y,c);
     SetPixel(hdc,xc-x,yc+y,c);
@@ -309,12 +328,14 @@ void DrawCircle_polar(HDC hdc, int xc,int yc, int R, COLORREF color)
 }
 
 /////////////////////////////////////////////////////////////////
-void Draw_Midpoint_circle(HDC hdc, int xc , int yc ,int r ,COLORREF color){
+void Draw_Midpoint_circle(HDC hdc, int xc, int yc,int r,COLORREF color)
+{
     int x = 0;
     int y = r;
     int d = 1-r;
     Draw8point(hdc,xc,yc,x,y,color);
-    while (x<y){
+    while (x<y)
+    {
         if (d<0)
             d+= 2*x+3;
         else
@@ -410,28 +431,32 @@ void DrawCircleFilling(HDC hdc,int xc,int yc,int R,int quarter,COLORREF color)
     }
 }
 ///////////////////////////////////Filter with circle////////////////
-void Draw8Point( HDC hdc, int xc, int yc, int x, int y,int q ,COLORREF c)
+void Draw8Point( HDC hdc, int xc, int yc, int x, int y,int q,COLORREF c)
 {
 
-    if(q==1){
+    if(q==1)
+    {
         //First quarter
         SetPixel(hdc,xc+x,yc-y,c);
         SetPixel(hdc,xc+y,yc-x,c);
     }
 
-    if(q==2){
+    if(q==2)
+    {
 
         //Second quarter
         SetPixel(hdc,xc-x,yc-y,c);
         SetPixel(hdc,xc-y,yc-x, c);
 
     }
-    if(q==3){
+    if(q==3)
+    {
         //Third quarter
         SetPixel(hdc,xc-x,yc+y, c);
         SetPixel(hdc,xc-y,yc+x, c);
     }
-    if(q==4){
+    if(q==4)
+    {
         //Fourth quarter
         SetPixel(hdc,xc+x,yc+y, c);
         SetPixel(hdc,xc+y,yc+x, c);
@@ -609,12 +634,84 @@ void CohenSuth(HDC hdc,int xs,int ys,int xe,int ye,int xleft,int ytop,int xright
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 //***implement of Clipping point algorithm
-void PointClipping(HDC hdc ,int x,int y,int xleft,int ytop,int xright,int ybottom,COLORREF color)
+void PointClipping(HDC hdc,int x,int y,int xleft,int ytop,int xright,int ybottom,COLORREF color)
 {
     if(x>=xleft && x<= xright && y>=ytop && y<=ybottom)
         SetPixel(hdc,x,y,color);
 }
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//***implement of Clipping Polygn algorithm
 
+VertexList ClipWithEdge(VertexList p,int edge,IsInFunc In,IntersectFunc Intersect)
+{
+    VertexList OutList;
+    Vertex v1=p[p.size()-1];
+    bool v1_in=In(v1,edge);
+    for(int i=0; i<(int)p.size(); i++)
+    {
+        Vertex v2=p[i];
+        bool v2_in=In(v2,edge);
+        if(!v1_in && v2_in)
+        {
+            OutList.push_back(Intersect(v1,v2,edge));
+            OutList.push_back(v2);
+        }
+        else if(v1_in && v2_in) OutList.push_back(v2);
+        else if(v1_in) OutList.push_back(Intersect(v1,v2,edge));
+        v1=v2;
+        v1_in=v2_in;
+    }
+    return OutList;
+}
+bool InLeft(Vertex& v,int edge)
+{
+    return v.x>=edge;
+}
+bool InRight(Vertex& v,int edge)
+{
+    return v.x<=edge;
+}
+bool InTop(Vertex& v,int edge)
+{
+    return v.y>=edge;
+}
+bool InBottom(Vertex& v,int edge)
+{
+    return v.y<=edge;
+}
+Vertex VIntersect(Vertex& v1,Vertex& v2,int xedge)
+{
+    Vertex res;
+    res.x=xedge;
+    res.y=v1.y+(xedge-v1.x)*(v2.y-v1.y)/(v2.x-v1.x);
+    return res;
+}
+Vertex HIntersect(Vertex& v1,Vertex& v2,int yedge)
+{
+    Vertex res;
+    res.y=yedge;
+    res.x=v1.x+(yedge-v1.y)*(v2.x-v1.x)/(v2.y-v1.y);
+    return res;
+}
+
+void PolygonClip(HDC hdc,int xleft,int ytop,int xright,int ybottom)
+{
+    VertexList vlist= {};
+//for(int i=0;i<n;i++)vlist.push_back(Vertex(p[i].x,p[i].y));
+    vlist=ClipWithEdge(vlist,xleft,InLeft,VIntersect);
+    vlist=ClipWithEdge(vlist,ytop,InTop,HIntersect);
+    vlist=ClipWithEdge(vlist,xright,InRight,VIntersect);
+    vlist=ClipWithEdge(vlist,ybottom,InBottom,HIntersect);
+    Vertex v1=vlist[vlist.size()-1];
+    for(int i=0; i<(int)vlist.size(); i++)
+    {
+        Vertex v2=vlist[i];
+        MoveToEx(hdc,Round(v1.x),Round(v1.y),NULL);
+        LineTo(hdc,Round(v2.x),Round(v2.y));
+        v1=v2;
+    }
+}
 
 /////////////////////////////////////////////
 ////////////Save Points/////////////////////
@@ -786,7 +883,8 @@ void Load(HDC hdc)
     {
         vector<string> Fun_Load;
         string buff ="";
-        for (auto n:Line){
+        for (auto n:Line)
+        {
             if (n != ',')
                 buff +=n;
             else if (n == ',' && buff != "")
@@ -847,7 +945,8 @@ void Load(HDC hdc)
             Save_Point x(Fun_Load[0],stoi(Fun_Load[1]),stoi(Fun_Load[2]),stoi(Fun_Load[3]),stoi(Fun_Load[4]),stoi(Fun_Load[5]),stoi(Fun_Load[6]));
             Arr_Save_Point.push_back(x);
         }
-        else if (Fun_Load[0] == "DMMCircle"){
+        else if (Fun_Load[0] == "DMMCircle")
+        {
             COLORREF c =RGB(stoi(Fun_Load[4]),stoi(Fun_Load[5]),stoi(Fun_Load[6]));
             DrawCircle_MidPoint_Modified(hdc,stoi(Fun_Load[1]),stoi(Fun_Load[2]),stoi(Fun_Load[3]),c);
             Save_Point x(Fun_Load[0],stoi(Fun_Load[1]),stoi(Fun_Load[2]),stoi(Fun_Load[3]),stoi(Fun_Load[4]),stoi(Fun_Load[5]),stoi(Fun_Load[6]));
@@ -941,19 +1040,19 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
     /* The class is registered, let's create the program*/
     hwnd = CreateWindowEx (
-            0,                   /* Extended possibilites for variation */
-            szClassName,         /* Classname */
-            _T("Graphics project App"),       /* Title Text */
-            WS_OVERLAPPEDWINDOW, /* default window */
-            CW_USEDEFAULT,       /* Windows decides the position */
-            CW_USEDEFAULT,       /* where the window ends up on the screen */
-            544,                 /* The programs width */
-            375,                 /* and height in pixels */
-            HWND_DESKTOP,        /* The window is a child-window to desktop */
-            NULL,                /* No menu */
-            hThisInstance,       /* Program Instance handler */
-            NULL                 /* No Window Creation data */
-    );
+               0,                   /* Extended possibilites for variation */
+               szClassName,         /* Classname */
+               _T("Graphics project App"),       /* Title Text */
+               WS_OVERLAPPEDWINDOW, /* default window */
+               CW_USEDEFAULT,       /* Windows decides the position */
+               CW_USEDEFAULT,       /* where the window ends up on the screen */
+               544,                 /* The programs width */
+               375,                 /* and height in pixels */
+               HWND_DESKTOP,        /* The window is a child-window to desktop */
+               NULL,                /* No menu */
+               hThisInstance,       /* Program Instance handler */
+               NULL                 /* No Window Creation data */
+           );
 
     /* Make the window visible on the screen */
     ShowWindow (hwnd, nCmdShow);
@@ -1026,8 +1125,11 @@ void addMenu(HWND hwnd)
     AppendMenu(hMenu,MF_POPUP,(UINT_PTR)hquarter,"Quarter Circle");
 
     HMENU hwindow = CreateMenu();
-    AppendMenu(hwindow,MF_STRING,22,"Clipping by Line");
-    AppendMenu(hwindow,MF_STRING,23," Clipping by point");
+    AppendMenu(hwindow,MF_STRING,22,"Clipping by Line(Rectangle)");
+    AppendMenu(hwindow,MF_STRING,23,"Clipping by point(Rectangle)");
+    AppendMenu(hwindow,MF_STRING,50,"Clipping by Polygon(Rectangle)");
+    AppendMenu(hwindow,MF_STRING,51,"Clipping by Line(Circle)");
+    AppendMenu(hwindow,MF_STRING,52,"Clipping by Point(Circle)");
     AppendMenu(hMenu,MF_POPUP,(UINT_PTR)hwindow,"Clipping");
 
     HMENU hFillingByCircles = CreateMenu();
@@ -1068,712 +1170,839 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
     HDC hdc = GetDC(hwnd);
     switch (message)                  /* handle the messages */
     {
-        case WM_LBUTTONDOWN:
+    case WM_LBUTTONDOWN:
+    {
+        x1 = LOWORD(lParam);
+        y_1 = HIWORD(lParam);
+        if (m == 22) //Line clipping (Rectangle)
         {
-            x1 = LOWORD(lParam);
-            y_1 = HIWORD(lParam);
-            if (m == 22) //Line clipping
+            if(Num_of_Points == 0)
             {
-                if(Num_of_Points == 0)
-                {
-                    X_left=LOWORD(lParam);
-                    Y_top=HIWORD(lParam);
-                    Num_of_Points++;
-                }
-                else if (Num_of_Points == 1){
-                    X_right=LOWORD(lParam);
-                    Y_bottom=HIWORD(lParam);
-                    Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
-                    Num_of_Points++;
-                }
-                else if(Num_of_Points==2)
-                {
-                    X_start=LOWORD(lParam);
-                    Y_start=HIWORD(lParam);
-                    Num_of_Points++;
-                }
-                else if (Num_of_Points==3)
-                {
-                    X_end=LOWORD(lParam);
-                    Y_end=HIWORD(lParam);
-                    CohenSuth(hdc,X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
-                    Num_of_Points=0;
-                }
-                Save_Point x("CohenSuth",X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,0,0,0);
-                Arr_Save_Point.push_back(x);
+                X_left=LOWORD(lParam);
+                Y_top=HIWORD(lParam);
+                Num_of_Points++;
             }
-
-            else if (m == 23) //clipping point
+            else if (Num_of_Points == 1)
             {
-                c = RGB(0,255,0);
-
-                if(counter == 0)
-                {
-                    X_left=LOWORD(lParam);
-                    Y_top=HIWORD(lParam);
-                    counter++;
-                }
-                else if (counter == 1){
-                    X_right=LOWORD(lParam);
-                    Y_bottom=HIWORD(lParam);
-                    Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
-                    counter++;
-                }
-                else if(counter==2)
-                {
-                    X_start=LOWORD(lParam);
-                    Y_start=HIWORD(lParam);
-                    counter++;
-                }
-                else if (counter==3)
-                {
-                    X_end=LOWORD(lParam);
-                    Y_end=HIWORD(lParam);
-                    PointClipping(hdc,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
-                    counter=0;
-                }
+                X_right=LOWORD(lParam);
+                Y_bottom=HIWORD(lParam);
+                Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
+                Num_of_Points++;
             }
-            //////////////////////////////////////////////////////
-            if(m == 5 ||m == 6) //Draw ellipse (Direct-polar)
+            else if(Num_of_Points==2)
             {
-                if (m==5){
-                    if(counter_ell ==0){
-                        x2 = LOWORD(lParam);
-                        y2 = HIWORD(lParam);
-                        counter_ell ++;
-                    }
-                    else if (counter_ell==1){
-                        x3 = LOWORD(lParam);
-                        y3 = HIWORD(lParam);
-                        counter_ell++;
-                    }
-                    else if (counter_ell ==2){
-                        r = Round(sqrt(pow(x2 - x1, 2.0) + pow(y2 - y_1, 2.0)));
-                        r2 = Round(sqrt(pow(x3 - x1, 2.0) + pow(y3 - y_1, 2.0)));
-                        cout<< "Draw Direct Ellipse "<< endl;
-                        directellipse(hdc,x1,y_1,r,r2,c);
-                        counter_ell =0;
-                    }
+                X_start=LOWORD(lParam);
+                Y_start=HIWORD(lParam);
+                Num_of_Points++;
+            }
+            else if (Num_of_Points==3)
+            {
+                X_end=LOWORD(lParam);
+                Y_end=HIWORD(lParam);
+                CohenSuth(hdc,X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
+                Num_of_Points=0;
+            }
+            Save_Point x("CohenSuth",X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,0,0,0);
+            Arr_Save_Point.push_back(x);
+        }
 
-                    if(c==RGB(255,0,0))
-                    {
-                        Save_Point x("DDEllipse",x1,y_1,r,r2,255,0,0,'e');
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,255,0))
-                    {
-                        Save_Point x("DDEllipse",x1,y_1,r,r2,0,255,0,'e');
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,0,255))
-                    {
-                        Save_Point x("DDEllipse",x1,y_1,r,r2,0,0,255,'e');
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,0,0))
-                    {
-                        Save_Point x("DDEllipse",x1,y_1,r,r2,0,0,0,'e');
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else
-                    {
-                        Save_Point x("DDEllipse",x1,y_1,r,r2,Rc,Gc,Bc,'e');
-                        Arr_Save_Point.push_back(x);
-                    }
+        if (m == 51) //Line clipping (Circle)
+        {
+            if(Num_of_Points == 0)
+            {
+                X_left=LOWORD(lParam); //X center.
+                Y_top=HIWORD(lParam);   // Y Center.
+                Num_of_Points++;
+            }
+            else if (Num_of_Points == 1)
+            {
+                X_right=LOWORD(lParam);
+                Y_bottom=HIWORD(lParam);
+                int   r1=sqrt(pow((X_right - X_left),2)+pow((Y_bottom-Y_top),2));
+                Draw_Midpoint_circle(hdc, X_left, Y_top, r1,RGB(0,0,0));
+                //Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
+                Num_of_Points++;
+            }
+            else if(Num_of_Points==2)
+            {
+                X_start=LOWORD(lParam);
+                Y_start=HIWORD(lParam);
+                Num_of_Points++;
+            }
+            else if (Num_of_Points==3)
+            {
+                X_end=LOWORD(lParam);
+                Y_end=HIWORD(lParam);
+                CohenSuth(hdc,X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
+                Num_of_Points=0;
+            }
+            Save_Point x("CohenSuth",X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,0,0,0);
+            Arr_Save_Point.push_back(x);
+        }
 
-                    cout<<"Draw Direct Ellipse Done !"<<endl;
-                }
+        else if (m == 23) //clipping point(Rectangle).
+        {
+            c = RGB(0,255,0);
 
-                else if(m == 6)//Polar Ellipse
-                {
-                    if(counter_ell ==0){
-                        x2 = LOWORD(lParam);
-                        y2 = HIWORD(lParam);
-                        counter_ell ++;
-                    }
-                    else if (counter_ell==1){
-                        x3 = LOWORD(lParam);
-                        y3 = HIWORD(lParam);
-                        counter_ell++;
-                    }
-                    else if (counter_ell ==2){
-                        r = Round(sqrt(pow(x2 - x1, 2.0) + pow(y2 - y_1, 2.0)));
-                        r2 = Round(sqrt(pow(x3 - x1, 2.0) + pow(y3 - y_1, 2.0)));
-                        cout<< "Draw polar Ellipse "<< endl;
-                        DrawEllipsePolar( hdc, x1, y_1, r, r2, c);
-                        counter_ell =0;
-                    }
-
-                    if(c==RGB(255,0,0))
-                    {
-                        Save_Point x("DPEllipse",x1,y_1,r,r2,255,0,0,'e');
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,255,0))
-                    {
-                        Save_Point x("DPEllipse",x1,y_1,r,r2,0,255,0,'e');
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,0,255))
-                    {
-                        Save_Point x("DPEllipse",x1,y_1,r,r2,0,0,255,'e');
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,0,0))
-                    {
-                        Save_Point x("DPEllipse",x1,y_1,r,r2,0,0,0,'e');
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else
-                    {
-                        Save_Point x("DPEllipse",x1,y_1,r,r2,Rc,Gc,Bc,'e');
-                        Arr_Save_Point.push_back(x);
-                    }
-                    cout<<"Draw Polar Ellipse Done !"<<endl;
-
-                }
+            if(counter == 0)
+            {
+                X_left=LOWORD(lParam);
+                Y_top=HIWORD(lParam);
+                counter++;
+            }
+            else if (counter == 1)
+            {
+                X_right=LOWORD(lParam);
+                Y_bottom=HIWORD(lParam);
+                Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
+                counter++;
+            }
+            else if(counter==2)
+            {
+                X_start=LOWORD(lParam);
+                Y_start=HIWORD(lParam);
+                counter++;
+            }
+            else if (counter==3)
+            {
+                X_end=LOWORD(lParam);
+                Y_end=HIWORD(lParam);
+                //PolygonClip(hdc ,X_left , Y_top , X_right , Y_bottom);
+                PointClipping(hdc,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
+                counter=0;
             }
         }
-            break;
+        if (m == 52) //Point clipping (Circle)
+        {
+            if(Num_of_Points == 0)
+            {
+                X_left=LOWORD(lParam); //X center.
+                Y_top=HIWORD(lParam);   // Y Center.
+                Num_of_Points++;
+            }
+            else if (Num_of_Points == 1)
+            {
+                X_right=LOWORD(lParam);
+                Y_bottom=HIWORD(lParam);
+                int   r1=sqrt(pow((X_right - X_left),2)+pow((Y_bottom-Y_top),2));
+                Draw_Midpoint_circle(hdc, X_left, Y_top, r1,RGB(255,255,255));
+                //Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
+                Num_of_Points++;
+            }
+            else if(Num_of_Points==2)
+            {
+                X_start=LOWORD(lParam);
+                Y_start=HIWORD(lParam);
+                Num_of_Points++;
+            }
+            else if (Num_of_Points==3)
+            {
+                X_end=LOWORD(lParam);
+                Y_end=HIWORD(lParam);
+                PointClipping(hdc,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
+                Num_of_Points=0;
+            }
+            Save_Point x("CohenSuth",X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,0,0,0);
+            Arr_Save_Point.push_back(x);
+        }
 
-        case WM_RBUTTONDOWN:
+        else if (m == 50) //clipping Polygon (Rectangle)
+        {
+            c = RGB(0,255,0);
+
+            if(counter == 0)
+            {
+                X_left=LOWORD(lParam);
+                Y_top=HIWORD(lParam);
+                counter++;
+            }
+            else if (counter == 1)
+            {
+                X_right=LOWORD(lParam);
+                Y_bottom=HIWORD(lParam);
+                Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
+                counter++;
+            }
+            else if(counter==2)
+            {
+                X_start=LOWORD(lParam);
+                Y_start=HIWORD(lParam);
+                counter++;
+            }
+            else if (counter==3)
+            {
+                X_end=LOWORD(lParam);
+                Y_end=HIWORD(lParam);
+                PolygonClip(hdc,X_left, Y_top, X_right, Y_bottom);
+                //PointClipping(hdc,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
+                counter=0;
+            }
+        }
+        //////////////////////////////////////////////////////
+        if(m == 5 ||m == 6) //Draw ellipse (Direct-polar)
+        {
+            if (m==5)
+            {
+                if(counter_ell ==0)
+                {
+                    x2 = LOWORD(lParam);
+                    y2 = HIWORD(lParam);
+                    counter_ell ++;
+                }
+                else if (counter_ell==1)
+                {
+                    x3 = LOWORD(lParam);
+                    y3 = HIWORD(lParam);
+                    counter_ell++;
+                }
+                else if (counter_ell ==2)
+                {
+                    r = Round(sqrt(pow(x2 - x1, 2.0) + pow(y2 - y_1, 2.0)));
+                    r2 = Round(sqrt(pow(x3 - x1, 2.0) + pow(y3 - y_1, 2.0)));
+                    cout<< "Draw Direct Ellipse "<< endl;
+                    directellipse(hdc,x1,y_1,r,r2,c);
+                    counter_ell =0;
+                }
+
+                if(c==RGB(255,0,0))
+                {
+                    Save_Point x("DDEllipse",x1,y_1,r,r2,255,0,0,'e');
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,255,0))
+                {
+                    Save_Point x("DDEllipse",x1,y_1,r,r2,0,255,0,'e');
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,0,255))
+                {
+                    Save_Point x("DDEllipse",x1,y_1,r,r2,0,0,255,'e');
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,0,0))
+                {
+                    Save_Point x("DDEllipse",x1,y_1,r,r2,0,0,0,'e');
+                    Arr_Save_Point.push_back(x);
+                }
+                else
+                {
+                    Save_Point x("DDEllipse",x1,y_1,r,r2,Rc,Gc,Bc,'e');
+                    Arr_Save_Point.push_back(x);
+                }
+
+                cout<<"Draw Direct Ellipse Done !"<<endl;
+            }
+
+            else if(m == 6)//Polar Ellipse
+            {
+                if(counter_ell ==0)
+                {
+                    x2 = LOWORD(lParam);
+                    y2 = HIWORD(lParam);
+                    counter_ell ++;
+                }
+                else if (counter_ell==1)
+                {
+                    x3 = LOWORD(lParam);
+                    y3 = HIWORD(lParam);
+                    counter_ell++;
+                }
+                else if (counter_ell ==2)
+                {
+                    r = Round(sqrt(pow(x2 - x1, 2.0) + pow(y2 - y_1, 2.0)));
+                    r2 = Round(sqrt(pow(x3 - x1, 2.0) + pow(y3 - y_1, 2.0)));
+                    cout<< "Draw polar Ellipse "<< endl;
+                    DrawEllipsePolar( hdc, x1, y_1, r, r2, c);
+                    counter_ell =0;
+                }
+
+                if(c==RGB(255,0,0))
+                {
+                    Save_Point x("DPEllipse",x1,y_1,r,r2,255,0,0,'e');
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,255,0))
+                {
+                    Save_Point x("DPEllipse",x1,y_1,r,r2,0,255,0,'e');
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,0,255))
+                {
+                    Save_Point x("DPEllipse",x1,y_1,r,r2,0,0,255,'e');
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,0,0))
+                {
+                    Save_Point x("DPEllipse",x1,y_1,r,r2,0,0,0,'e');
+                    Arr_Save_Point.push_back(x);
+                }
+                else
+                {
+                    Save_Point x("DPEllipse",x1,y_1,r,r2,Rc,Gc,Bc,'e');
+                    Arr_Save_Point.push_back(x);
+                }
+                cout<<"Draw Polar Ellipse Done !"<<endl;
+
+            }
+        }
+    }
+    break;
+
+    case WM_RBUTTONDOWN:
+        x2 = LOWORD(lParam);
+        y2 = HIWORD(lParam);
+
+        if (m == 7 || m == 8 || m == 9 || m == 26)
+        {
+            R= Round(std::sqrt(std::pow((x2 - x1), 2.0) + pow((y2 - y_1), 2.0)));
+            if(m == 7) //Circle(Direct)
+            {
+                cout<< "Draw Direct Circle"<< endl;
+                DrawCircle_Direct(hdc,x1,y_1,R,c);
+                if(c==RGB(255,0,0))
+                {
+                    Save_Point x("DDCircle",x1,y_1,R,255,0,0);
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,255,0))
+                {
+
+                    Save_Point x("DDCircle",x1,y_1,R,0,255,0);
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,0,255))
+                {
+
+                    Save_Point x("DDCircle",x1,y_1,R,0,0,255);
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,0,0))
+                {
+
+                    Save_Point x("DDCircle",x1,y_1,R,0,0,0);
+                    Arr_Save_Point.push_back(x);
+                }
+                else
+                {
+
+                    Save_Point x("DDCircle",x1,y_1,R,Rc,Gc,Bc);
+                    Arr_Save_Point.push_back(x);
+                }
+                cout<<"Draw Direct Circle Done !"<<endl;
+            }
+
+            else if (m == 8) //polar circle
+            {
+                cout<< "Draw Polar Circle"<< endl;
+                DrawCircle_polar(hdc,x1,y_1,R,c);
+                if(c==RGB(255,0,0))
+                {
+                    Save_Point x("DPCircle",x1,y_1,R,255,0,0);
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,255,0))
+                {
+
+                    Save_Point x("DPCircle",x1,y_1,R,0,255,0);
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,0,255))
+                {
+
+                    Save_Point x("DPCircle",x1,y_1,R,0,0,255);
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,0,0))
+                {
+
+                    Save_Point x("DPCircle",x1,y_1,R,0,0,0);
+                    Arr_Save_Point.push_back(x);
+                }
+                else
+                {
+
+                    Save_Point x("DPCircle",x1,y_1,R,Rc,Gc,Bc);
+                    Arr_Save_Point.push_back(x);
+                }
+                cout<<"Draw Polar Circle Done !"<<endl;
+            }
+
+            else if(m == 9)//Circle(MidPooint)
+            {
+                cout<< "Draw MidPoint Circle "<< endl;
+                Draw_Midpoint_circle(hdc,x1,y_1,R,c);
+                if(c==RGB(255,0,0))
+                {
+                    Save_Point x("DMCircle",x1,y_1,R,255,0,0);
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,255,0))
+                {
+
+                    Save_Point x("DMCircle",x1,y_1,R,0,255,0);
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,0,255))
+                {
+
+                    Save_Point x("DMCircle",x1,y_1,R,0,0,255);
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,0,0))
+                {
+                    Save_Point x("DMCircle",x1,y_1,R,0,0,0);
+                    Arr_Save_Point.push_back(x);
+                }
+                else
+                {
+                    Save_Point x("DMCircle",x1,y_1,R,Rc,Gc,Bc);
+                    Arr_Save_Point.push_back(x);
+                }
+                cout<<"Draw MidPoint Circle Done !"<<endl;
+            }
+            else if (m == 26 ) //Modified midpoint for circle
+            {
+                cout<< "Draw Modified MidPoint Circle "<< endl;
+                DrawCircle_MidPoint_Modified(hdc,x1,y_1,R,c);
+                if(c==RGB(255,0,0))
+                {
+                    Save_Point x("DMCircle",x1,y_1,R,255,0,0);
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,255,0))
+                {
+
+                    Save_Point x("DMCircle",x1,y_1,R,0,255,0);
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,0,255))
+                {
+
+                    Save_Point x("DMCircle",x1,y_1,R,0,0,255);
+                    Arr_Save_Point.push_back(x);
+                }
+                else if (c==RGB(0,0,0))
+                {
+                    Save_Point x("DMCircle",x1,y_1,R,0,0,0);
+                    Arr_Save_Point.push_back(x);
+                }
+                else
+                {
+                    Save_Point x("DMCircle",x1,y_1,R,Rc,Gc,Bc);
+                    Arr_Save_Point.push_back(x);
+                }
+                cout<<"Draw Modified MidPoint Circle Done !"<<endl;
+
+            }
+
+        }
+
+        else if (m == 14 || m == 15 || m == 16 || m ==17 ) //Filling Circle
+        {
+            //1-Circle
+            //2-color of Circle
+            //3-draw xc and yc click left button
+            //4-choose quarter
+            //5-choose filling color
+            //6-click right button
             x2 = LOWORD(lParam);
             y2 = HIWORD(lParam);
-
-            if (m == 7 || m == 8 || m == 9 || m == 26){
-                R= Round(std::sqrt(std::pow((x2 - x1), 2.0) + pow((y2 - y_1), 2.0)));
-                if(m == 7) //Circle(Direct)
-                {
-                    cout<< "Draw Direct Circle"<< endl;
-                    DrawCircle_Direct(hdc,x1,y_1,R,c);
-                    if(c==RGB(255,0,0))
-                    {
-                        Save_Point x("DDCircle",x1,y_1,R,255,0,0);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,255,0))
-                    {
-
-                        Save_Point x("DDCircle",x1,y_1,R,0,255,0);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,0,255))
-                    {
-
-                        Save_Point x("DDCircle",x1,y_1,R,0,0,255);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,0,0))
-                    {
-
-                        Save_Point x("DDCircle",x1,y_1,R,0,0,0);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else
-                    {
-
-                        Save_Point x("DDCircle",x1,y_1,R,Rc,Gc,Bc);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    cout<<"Draw Direct Circle Done !"<<endl;
-                }
-
-                else if (m == 8) //polar circle
-                {
-                    cout<< "Draw Polar Circle"<< endl;
-                    DrawCircle_polar(hdc,x1,y_1,R,c);
-                    if(c==RGB(255,0,0))
-                    {
-                        Save_Point x("DPCircle",x1,y_1,R,255,0,0);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,255,0))
-                    {
-
-                        Save_Point x("DPCircle",x1,y_1,R,0,255,0);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,0,255))
-                    {
-
-                        Save_Point x("DPCircle",x1,y_1,R,0,0,255);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,0,0))
-                    {
-
-                        Save_Point x("DPCircle",x1,y_1,R,0,0,0);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else
-                    {
-
-                        Save_Point x("DPCircle",x1,y_1,R,Rc,Gc,Bc);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    cout<<"Draw Polar Circle Done !"<<endl;
-                }
-
-                else if(m == 9)//Circle(MidPooint)
-                {
-                    cout<< "Draw MidPoint Circle "<< endl;
-                    Draw_Midpoint_circle(hdc,x1,y_1,R,c);
-                    if(c==RGB(255,0,0))
-                    {
-                        Save_Point x("DMCircle",x1,y_1,R,255,0,0);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,255,0))
-                    {
-
-                        Save_Point x("DMCircle",x1,y_1,R,0,255,0);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,0,255))
-                    {
-
-                        Save_Point x("DMCircle",x1,y_1,R,0,0,255);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,0,0))
-                    {
-                        Save_Point x("DMCircle",x1,y_1,R,0,0,0);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else
-                    {
-                        Save_Point x("DMCircle",x1,y_1,R,Rc,Gc,Bc);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    cout<<"Draw MidPoint Circle Done !"<<endl;
-                }
-                else if (m == 26 ) //Modified midpoint for circle
-                {
-                    cout<< "Draw Modified MidPoint Circle "<< endl;
-                    DrawCircle_MidPoint_Modified(hdc,x1,y_1,R,c);
-                    if(c==RGB(255,0,0))
-                    {
-                        Save_Point x("DMCircle",x1,y_1,R,255,0,0);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,255,0))
-                    {
-
-                        Save_Point x("DMCircle",x1,y_1,R,0,255,0);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,0,255))
-                    {
-
-                        Save_Point x("DMCircle",x1,y_1,R,0,0,255);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else if (c==RGB(0,0,0))
-                    {
-                        Save_Point x("DMCircle",x1,y_1,R,0,0,0);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    else
-                    {
-                        Save_Point x("DMCircle",x1,y_1,R,Rc,Gc,Bc);
-                        Arr_Save_Point.push_back(x);
-                    }
-                    cout<<"Draw Modified MidPoint Circle Done !"<<endl;
-
-                }
-
-            }
-
-            else if (m == 14 || m == 15 || m == 16 || m ==17 ) //Filling Circle
+            R= Round(std::sqrt(std::pow(x2 - x1, 2.0) + pow(y2 - y_1, 2.0)));
+            if(m == 14)//Filling Circle(Black color)
             {
-                //1-Circle
-                //2-color of Circle
-                //3-draw xc and yc click left button
-                //4-choose quarter
-                //5-choose filling color
-                //6-click right button
-                x2 = LOWORD(lParam);
-                y2 = HIWORD(lParam);
-                R= Round(std::sqrt(std::pow(x2 - x1, 2.0) + pow(y2 - y_1, 2.0)));
-                if(m == 14)//Filling Circle(Black color)
-                {
 
-                    cout<< "Filling  Circle with black Color"<< endl;
-                    DrawCircleFilling(hdc,x1,y_1,R,quarter,RGB(0,0,0));
-                    Save_Point x("DPCircleFilling",x1,y_1,R,quarter,0,0,0,"e");
-                    Arr_Save_Point.push_back(x);
-                    cout<< "Filling  Circle with black Color Done"<< endl;
+                cout<< "Filling  Circle with black Color"<< endl;
+                DrawCircleFilling(hdc,x1,y_1,R,quarter,RGB(0,0,0));
+                Save_Point x("DPCircleFilling",x1,y_1,R,quarter,0,0,0,"e");
+                Arr_Save_Point.push_back(x);
+                cout<< "Filling  Circle with black Color Done"<< endl;
 
-
-                }
-                else if (m == 15)//Filling Circle(Red color)
-                {
-                    cout<< "Filling  Circle with Red Color"<< endl;
-                    DrawCircleFilling(hdc,x1,y_1,R,quarter,RGB(255,0,0));
-                    Save_Point x("DPCircleFilling",x1,y_1,R,quarter,255,0,0,"e");
-                    Arr_Save_Point.push_back(x);
-                    cout<< "Filling  Circle with Red Color Done"<< endl;
-                }
-                else if (m == 16)//Filling Circle(Blue color)
-                {
-                    cout<< "Filling  Circle with Blue Color"<< endl;
-                    DrawCircleFilling(hdc,x1,y_1,R,quarter,RGB(0,0,255));
-                    Save_Point x("DPCircleFilling",x1,y_1,R,quarter,0,0,255,"e");
-                    Arr_Save_Point.push_back(x);
-                    cout<< "Filling  Circle with Blue Color Done"<< endl;
-                }
-                else if (m == 17) //Filling Circle(Green color)
-                {
-                    cout<< "Filling  Circle with Green Color"<< endl;
-                    DrawCircleFilling(hdc,x1,y_1,R,quarter,RGB(0,255,0));
-                    Save_Point x("DPCircleFilling",x1,y_1,R,quarter,0,255,0,"e");
-                    Arr_Save_Point.push_back(x);
-                    cout<< "Filling  Circle with Green Color Done"<< endl;
-                }
 
             }
-            else if (m == 27 || m == 28 || m == 29 || m ==30 ) //Filling Circle
+            else if (m == 15)//Filling Circle(Red color)
             {
-                //1-Circle
-                //2-color of Circle
-                //3-draw xc and yc click left button
-                //4-choose quarter
-                //5-choose filling color
-                //6-click right button
-                x2 = LOWORD(lParam);
-                y2 = HIWORD(lParam);
-                R= Round(std::sqrt(std::pow(x2 - x1, 2.0) + pow(y2 - y_1, 2.0)));
-                if(m == 27)//Filling Circle(Black color)
-                {
-
-                    cout<< "Filling  Circle with black Color"<< endl;
-                    DrawSolve(hdc,x1,y_1,R,quarter,RGB(0,0,0));
-                    Save_Point x("DPCircleFilling",x1,y_1,R,quarter,0,0,0,"e");
-                    Arr_Save_Point.push_back(x);
-                    cout<< "Filling  Circle with black Color Done"<< endl;
-
-
-                }
-                else if (m == 28)//Filling Circle(Red color)
-                {
-                    cout<< "Filling  Circle with Red Color"<< endl;
-                    DrawSolve(hdc,x1,y_1,R,quarter,RGB(255,0,0));
-                    Save_Point x("DPCircleFilling",x1,y_1,R,quarter,255,0,0,"e");
-                    Arr_Save_Point.push_back(x);
-                    cout<< "Filling  Circle with Red Color Done"<< endl;
-                }
-                else if (m == 29)//Filling Circle(Blue color)
-                {
-                    cout<< "Filling  Circle with Blue Color"<< endl;
-                    DrawSolve(hdc,x1,y_1,R,quarter,RGB(0,0,255));
-                    Save_Point x("DPCircleFilling",x1,y_1,R,quarter,0,0,255,"e");
-                    Arr_Save_Point.push_back(x);
-                    cout<< "Filling  Circle with Blue Color Done"<< endl;
-                }
-                else if (m == 30) //Filling Circle(Green color)
-                {
-                    cout<< "Filling  Circle with Green Color"<< endl;
-                    DrawSolve(hdc,x1,y_1,R,quarter,RGB(0,255,0));
-                    Save_Point x("DPCircleFilling",x1,y_1,R,quarter,0,255,0,"e");
-                    Arr_Save_Point.push_back(x);
-                    cout<< "Filling  Circle with Green Color Done"<< endl;
-                }
-
+                cout<< "Filling  Circle with Red Color"<< endl;
+                DrawCircleFilling(hdc,x1,y_1,R,quarter,RGB(255,0,0));
+                Save_Point x("DPCircleFilling",x1,y_1,R,quarter,255,0,0,"e");
+                Arr_Save_Point.push_back(x);
+                cout<< "Filling  Circle with Red Color Done"<< endl;
             }
-
-
-
-            else if (m == 2) //DDA Line
+            else if (m == 16)//Filling Circle(Blue color)
             {
-                cout<< "Draw DDA line "<< endl;
-                DrawLine_DDA(hdc,x1,y_1,x2,y2,c);
-                if(c==RGB(255,0,0))
-                {
-                    Save_Point x("DDLine",x1,y_1,x2,y2,255,0,0);
-                    Arr_Save_Point.push_back(x);
-                }
-                else if (c==RGB(0,255,0))
-                {
-                    Save_Point x("DDLine",x1,y_1,x2,y2,0,255,0);
-                    Arr_Save_Point.push_back(x);
-                }
-                else if (c==RGB(0,0,255))
-                {
-
-                    Save_Point x("DDLine",x1,y_1,x2,y2,0,0,255);
-                    Arr_Save_Point.push_back(x);
-                }
-                else if (c==RGB(0,0,0))
-                {
-                    Save_Point x("DDLine",x1,y_1,x2,y2,0,0,0);
-                    Arr_Save_Point.push_back(x);
-                }
-                else
-                {Save_Point x("DDLine",x1,y_1,x2,y2,Rc,Gc,Bc);
-                    Arr_Save_Point.push_back(x);
-                }
-                cout<< "Draw DDA line Done !"<< endl;
+                cout<< "Filling  Circle with Blue Color"<< endl;
+                DrawCircleFilling(hdc,x1,y_1,R,quarter,RGB(0,0,255));
+                Save_Point x("DPCircleFilling",x1,y_1,R,quarter,0,0,255,"e");
+                Arr_Save_Point.push_back(x);
+                cout<< "Filling  Circle with Blue Color Done"<< endl;
             }
-            else if (m == 3) //Midpoint Line
-            {cout<< "Draw MidPoint Line "<< endl;
-                BresenhamLine(hdc,x1,y_1,x2,y2,c);
-                if(c==RGB(255,0,0))
-                {
-                    Save_Point x("DMLine",x1,y_1,x2,y2,255,0,0);
-                    Arr_Save_Point.push_back(x);
-                }
-                else if (c==RGB(0,255,0))
-                {
-                    Save_Point x("DMLine",x1,y_1,x2,y2,0,255,0);
-                    Arr_Save_Point.push_back(x);
-                }
-                else if (c==RGB(0,0,255))
-                {
-                    Save_Point x("DMLine",x1,y_1,x2,y2,0,0,255);
-                    Arr_Save_Point.push_back(x);
-                }
-                else if (c==RGB(0,0,0))
-                {Save_Point x("DMLine",x1,y_1,x2,y2,0,0,0);
-                    Arr_Save_Point.push_back(x);
-                }
-                else
-                {Save_Point x("DMLine",x1,y_1,x2,y2,Rc,Gc,Bc);
-                    Arr_Save_Point.push_back(x);
-                }
-                cout<< "Draw mid point line Done !"<< endl;
-            }
-
-            else if (m == 4) //parametric Line
+            else if (m == 17) //Filling Circle(Green color)
             {
-                cout<< "Draw parametric Line"<< endl;
-                DrawLine_Parametric(hdc,x1,y_1,x2,y2,c);
-                if(c==RGB(255,0,0))
-                {
-
-                    Save_Point x("DPLine",x1,y_1,x2,y2,255,0,0);
-                    Arr_Save_Point.push_back(x);
-                }
-                else if (c==RGB(0,255,0))
-                {
-
-                    Save_Point x("DPLine",x1,y_1,x2,y2,0,255,0);
-                    Arr_Save_Point.push_back(x);
-                }
-                else if (c==RGB(0,0,255))
-                {
-
-                    Save_Point x("DPLine",x1,y_1,x2,y2,0,0,255);
-                    Arr_Save_Point.push_back(x);
-                }
-                else if (c==RGB(0,0,0))
-                {
-
-                    Save_Point x("DPLine",x1,y_1,x2,y2,0,0,0);
-                    Arr_Save_Point.push_back(x);
-                }
-                else
-                {
-
-                    Save_Point x("DPLine",x1,y_1,x2,y2,Rc,Gc,Bc);
-                    Arr_Save_Point.push_back(x);
-                }
-                cout<<"Draw parametric line Done !"<< endl;
+                cout<< "Filling  Circle with Green Color"<< endl;
+                DrawCircleFilling(hdc,x1,y_1,R,quarter,RGB(0,255,0));
+                Save_Point x("DPCircleFilling",x1,y_1,R,quarter,0,255,0,"e");
+                Arr_Save_Point.push_back(x);
+                cout<< "Filling  Circle with Green Color Done"<< endl;
             }
 
-            break;
-
-        case WM_CREATE:
-            addMenu(hwnd);
-            break;
-        case WM_COMMAND:
-        {
-            switch(wParam){
-                case(0):
-                    cout<< "Saving Process\n\n" ;
-                    Save();
-                    cout<< "Save Done ! \n\n";
-                    break;
-                case(1):
-                    cout<<"Load process\n\n";
-                    Load(hdc);
-                    cout<<"load Done !\n\n";
-                    break;
-                case(2):
-                    m = 2;
-                    cout << "Draw Line by DDA\n\n";
-                    break;
-                case(3):
-                    m=3;
-                    cout << "Draw Line by Mid Point\n\n";
-                    break;
-                case(4):
-                    m =4;
-                    cout << "Draw Line by Parametric\n\n";
-                    break;
-                case (5):
-                    m = 5;
-                    cout<<" Draw Direct ellipse \n\n";
-                    break;
-                case(6):
-                    m =6;
-                    cout<<"Draw polar ellipse \n\n";
-                    break;
-                case (7):
-                    m=7;
-                    cout<<"Draw direct circle \n\n";
-                    break;
-                case(8):
-                    m =8;
-                    cout<<"Draw Polar circle \n\n";
-                    break;
-                case(9):
-                    m = 9;
-                    cout<<"Draw Mid Point circle \n\n";
-                    break;
-                case (26):
-                    m = 26;
-                    cout<<"Draw circle by Modified Mid point \n\n";
-                    break;
-                case(10):
-                    cout<<"Draw by black color \n\n";
-                    c = 0;
-                    break;
-                case (11):
-                    cout<<"Draw by red color \n\n";
-                    c = RGB(255,0,0);
-                    break;
-                case(12):
-                    cout<<"Draw by blue color \n\n";
-                    c = RGB(0,0,255);
-                    break;
-                case (13):
-                    cout<<"Draw by green color \n\n";
-                    c = RGB(0,255,0);
-                    break;
-                case(14):
-                    m= 14;
-                    cout << "Fill circle by the Black color\n\n";
-                    cF = 0;
-                    break;
-                case(15):
-                    m = 15;
-                    cout << "Fill circle by the Red color\n\n";
-                    cF = RGB(255,0,0);
-                    break;
-                case (16):
-                    m = 16;
-                    cout<<"Fill circle by  the blue color \n\n";
-                    cF = RGB(0,0,255);
-                    break;
-                case(17):
-                    m =17;
-                    cout<<"Fill circle by the green color \n\n";
-                    cF = RGB(0,255,0);
-                    break;
-                case (18):
-                    m = 18;
-                    cout<<"Filling Circle with First Quarter \n\n";
-                    quarter=1;
-                    break;
-                case (19):
-                    m = 19;
-                    cout<<"Filling circle with second Quarter \n\n";
-                    quarter = 2;
-                    break;
-                case (20):
-                    m = 20;
-                    cout<<"Filling circle with third Quarter \n\n";
-                    quarter =3;
-                    break;
-                case (21):
-                    m =21;
-                    cout<<"Filling circle with fourth Quarter \n\n";
-                    quarter = 4;
-                    break;
-                case (22):
-                    m = 22;
-                    cout<<"line after clipping \n\n";
-                    break;
-                case (23):
-                    m = 23;
-                    cout<<"clipping point \n\n";
-                    break;
-
-
-                case(25):
-                    cout <<"Clean the window \n";
-                    Clear();
-                    InvalidateRect(hwnd, NULL, TRUE);
-                    break;
-                case (27):
-                    m = 27;
-                    cout<<"Filling Circle  with other circle in First Quarter \n\n";
-                    quarter=1;
-                    break;
-                case (28):
-                    m = 28;
-                    cout<<"Filling Circle  with other circle in second Quarter \n\n";
-                    quarter = 2;
-                    break;
-                case (29):
-                    m = 29;
-                    cout<<"Filling Circle  with other circle in third Quarter \n\n";
-                    quarter =3;
-                    break;
-                case (30):
-                    m =30;
-                    cout<<"Filling Circle  with other circle in fourth Quarter \n\n";
-                    quarter = 4;
-                    break;
-               case (31):
-                    curs = IDC_HAND;
-                    SetCursor(LoadCursor(NULL,curs));
-                    cout<<"Setting Courser\n";
-                    m = 31;
-                    break;
-                case (32):
-                    curs = IDC_ARROW;
-                    m = 32;
-                    break;
-                case (33):
-                    curs = IDC_CROSS;
-                    m = 33;
-                    break;
-                case (34):
-                    curs = IDC_HELP;
-                    m = 34;
-                    break;
-                case (35):
-                    curs =IDC_UPARROW;
-                    m = 35;
-                    break;
-                case (36):
-                    curs = IDC_IBEAM;
-                    m = 36;
-                    break;
-                case (37):
-                    curs = IDC_WAIT;
-                    m = 37;
-                    break;
-                default:
-                    m = LOWORD(wParam);
-                    break;
-
-            }
         }
+        else if (m == 27 || m == 28 || m == 29 || m ==30 ) //Filling Circle
+        {
+            //1-Circle
+            //2-color of Circle
+            //3-draw xc and yc click left button
+            //4-choose quarter
+            //5-choose filling color
+            //6-click right button
+            x2 = LOWORD(lParam);
+            y2 = HIWORD(lParam);
+            R= Round(std::sqrt(std::pow(x2 - x1, 2.0) + pow(y2 - y_1, 2.0)));
+            if(m == 27)//Filling Circle(Black color)
+            {
+
+                cout<< "Filling  Circle with black Color"<< endl;
+                DrawSolve(hdc,x1,y_1,R,quarter,RGB(0,0,0));
+                Save_Point x("DPCircleFilling",x1,y_1,R,quarter,0,0,0,"e");
+                Arr_Save_Point.push_back(x);
+                cout<< "Filling  Circle with black Color Done"<< endl;
+
+
+            }
+            else if (m == 28)//Filling Circle(Red color)
+            {
+                cout<< "Filling  Circle with Red Color"<< endl;
+                DrawSolve(hdc,x1,y_1,R,quarter,RGB(255,0,0));
+                Save_Point x("DPCircleFilling",x1,y_1,R,quarter,255,0,0,"e");
+                Arr_Save_Point.push_back(x);
+                cout<< "Filling  Circle with Red Color Done"<< endl;
+            }
+            else if (m == 29)//Filling Circle(Blue color)
+            {
+                cout<< "Filling  Circle with Blue Color"<< endl;
+                DrawSolve(hdc,x1,y_1,R,quarter,RGB(0,0,255));
+                Save_Point x("DPCircleFilling",x1,y_1,R,quarter,0,0,255,"e");
+                Arr_Save_Point.push_back(x);
+                cout<< "Filling  Circle with Blue Color Done"<< endl;
+            }
+            else if (m == 30) //Filling Circle(Green color)
+            {
+                cout<< "Filling  Circle with Green Color"<< endl;
+                DrawSolve(hdc,x1,y_1,R,quarter,RGB(0,255,0));
+                Save_Point x("DPCircleFilling",x1,y_1,R,quarter,0,255,0,"e");
+                Arr_Save_Point.push_back(x);
+                cout<< "Filling  Circle with Green Color Done"<< endl;
+            }
+
+        }
+
+
+
+        else if (m == 2) //DDA Line
+        {
+            cout<< "Draw DDA line "<< endl;
+            DrawLine_DDA(hdc,x1,y_1,x2,y2,c);
+            if(c==RGB(255,0,0))
+            {
+                Save_Point x("DDLine",x1,y_1,x2,y2,255,0,0);
+                Arr_Save_Point.push_back(x);
+            }
+            else if (c==RGB(0,255,0))
+            {
+                Save_Point x("DDLine",x1,y_1,x2,y2,0,255,0);
+                Arr_Save_Point.push_back(x);
+            }
+            else if (c==RGB(0,0,255))
+            {
+
+                Save_Point x("DDLine",x1,y_1,x2,y2,0,0,255);
+                Arr_Save_Point.push_back(x);
+            }
+            else if (c==RGB(0,0,0))
+            {
+                Save_Point x("DDLine",x1,y_1,x2,y2,0,0,0);
+                Arr_Save_Point.push_back(x);
+            }
+            else
+            {
+                Save_Point x("DDLine",x1,y_1,x2,y2,Rc,Gc,Bc);
+                Arr_Save_Point.push_back(x);
+            }
+            cout<< "Draw DDA line Done !"<< endl;
+        }
+        else if (m == 3) //Midpoint Line
+        {
+            cout<< "Draw MidPoint Line "<< endl;
+            BresenhamLine(hdc,x1,y_1,x2,y2,c);
+            if(c==RGB(255,0,0))
+            {
+                Save_Point x("DMLine",x1,y_1,x2,y2,255,0,0);
+                Arr_Save_Point.push_back(x);
+            }
+            else if (c==RGB(0,255,0))
+            {
+                Save_Point x("DMLine",x1,y_1,x2,y2,0,255,0);
+                Arr_Save_Point.push_back(x);
+            }
+            else if (c==RGB(0,0,255))
+            {
+                Save_Point x("DMLine",x1,y_1,x2,y2,0,0,255);
+                Arr_Save_Point.push_back(x);
+            }
+            else if (c==RGB(0,0,0))
+            {
+                Save_Point x("DMLine",x1,y_1,x2,y2,0,0,0);
+                Arr_Save_Point.push_back(x);
+            }
+            else
+            {
+                Save_Point x("DMLine",x1,y_1,x2,y2,Rc,Gc,Bc);
+                Arr_Save_Point.push_back(x);
+            }
+            cout<< "Draw mid point line Done !"<< endl;
+        }
+
+        else if (m == 4) //parametric Line
+        {
+            cout<< "Draw parametric Line"<< endl;
+            DrawLine_Parametric(hdc,x1,y_1,x2,y2,c);
+            if(c==RGB(255,0,0))
+            {
+
+                Save_Point x("DPLine",x1,y_1,x2,y2,255,0,0);
+                Arr_Save_Point.push_back(x);
+            }
+            else if (c==RGB(0,255,0))
+            {
+
+                Save_Point x("DPLine",x1,y_1,x2,y2,0,255,0);
+                Arr_Save_Point.push_back(x);
+            }
+            else if (c==RGB(0,0,255))
+            {
+
+                Save_Point x("DPLine",x1,y_1,x2,y2,0,0,255);
+                Arr_Save_Point.push_back(x);
+            }
+            else if (c==RGB(0,0,0))
+            {
+
+                Save_Point x("DPLine",x1,y_1,x2,y2,0,0,0);
+                Arr_Save_Point.push_back(x);
+            }
+            else
+            {
+
+                Save_Point x("DPLine",x1,y_1,x2,y2,Rc,Gc,Bc);
+                Arr_Save_Point.push_back(x);
+            }
+            cout<<"Draw parametric line Done !"<< endl;
+        }
+
+        break;
+
+    case WM_CREATE:
+        addMenu(hwnd);
+        break;
+    case WM_COMMAND:
+    {
+        switch(wParam)
+        {
+        case(0):
+            cout<< "Saving Process\n\n" ;
+            Save();
+            cout<< "Save Done ! \n\n";
             break;
-        case WM_SETCURSOR:
+        case(1):
+            cout<<"Load process\n\n";
+            Load(hdc);
+            cout<<"load Done !\n\n";
+            break;
+        case(2):
+            m = 2;
+            cout << "Draw Line by DDA\n\n";
+            break;
+        case(3):
+            m=3;
+            cout << "Draw Line by Mid Point\n\n";
+            break;
+        case(4):
+            m =4;
+            cout << "Draw Line by Parametric\n\n";
+            break;
+        case (5):
+            m = 5;
+            cout<<" Draw Direct ellipse \n\n";
+            break;
+        case(6):
+            m =6;
+            cout<<"Draw polar ellipse \n\n";
+            break;
+        case (7):
+            m=7;
+            cout<<"Draw direct circle \n\n";
+            break;
+        case(8):
+            m =8;
+            cout<<"Draw Polar circle \n\n";
+            break;
+        case(9):
+            m = 9;
+            cout<<"Draw Mid Point circle \n\n";
+            break;
+        case (26):
+            m = 26;
+            cout<<"Draw circle by Modified Mid point \n\n";
+            break;
+        case(10):
+            cout<<"Draw by black color \n\n";
+            c = 0;
+            break;
+        case (11):
+            cout<<"Draw by red color \n\n";
+            c = RGB(255,0,0);
+            break;
+        case(12):
+            cout<<"Draw by blue color \n\n";
+            c = RGB(0,0,255);
+            break;
+        case (13):
+            cout<<"Draw by green color \n\n";
+            c = RGB(0,255,0);
+            break;
+        case(14):
+            m= 14;
+            cout << "Fill circle by the Black color\n\n";
+            cF = 0;
+            break;
+        case(15):
+            m = 15;
+            cout << "Fill circle by the Red color\n\n";
+            cF = RGB(255,0,0);
+            break;
+        case (16):
+            m = 16;
+            cout<<"Fill circle by  the blue color \n\n";
+            cF = RGB(0,0,255);
+            break;
+        case(17):
+            m =17;
+            cout<<"Fill circle by the green color \n\n";
+            cF = RGB(0,255,0);
+            break;
+        case (18):
+            m = 18;
+            cout<<"Filling Circle with First Quarter \n\n";
+            quarter=1;
+            break;
+        case (19):
+            m = 19;
+            cout<<"Filling circle with second Quarter \n\n";
+            quarter = 2;
+            break;
+        case (20):
+            m = 20;
+            cout<<"Filling circle with third Quarter \n\n";
+            quarter =3;
+            break;
+        case (21):
+            m =21;
+            cout<<"Filling circle with fourth Quarter \n\n";
+            quarter = 4;
+            break;
+        case (22):
+            m = 22;
+            cout<<"line after clipping Using Rectangle as Window\n\n";
+            break;
+        case (23):
+            m = 23;
+            cout<<"clipping point Using Rectangle as Window \n\n";
+            break;
+        case (50):
+            m = 50;
+            cout<<"clipping Polygon Using Rectangle as Window \n\n";
+            break;
+        case (51):
+            m = 51;
+            cout<<"clipping Line Using Circle as Window \n\n";
+            break;
+
+        case (52):
+            m = 52;
+            cout<<"clipping Point Using Circle as Window \n\n";
+            break;
+        case(25):
+            cout <<"Clean the window \n";
+            Clear();
+            InvalidateRect(hwnd, NULL, TRUE);
+            break;
+        case (27):
+            m = 27;
+            cout<<"Filling Circle  with other circle in First Quarter \n\n";
+            quarter=1;
+            break;
+        case (28):
+            m = 28;
+            cout<<"Filling Circle  with other circle in second Quarter \n\n";
+            quarter = 2;
+            break;
+        case (29):
+            m = 29;
+            cout<<"Filling Circle  with other circle in third Quarter \n\n";
+            quarter =3;
+            break;
+        case (30):
+            m =30;
+            cout<<"Filling Circle  with other circle in fourth Quarter \n\n";
+            quarter = 4;
+            break;
+        case (31):
+            curs = IDC_HAND;
+            SetCursor(LoadCursor(NULL,curs));
+            cout<<"Setting Courser\n";
+            m = 31;
+            break;
+        case (32):
+            curs = IDC_ARROW;
+            m = 32;
+            break;
+        case (33):
+            curs = IDC_CROSS;
+            m = 33;
+            break;
+        case (34):
+            curs = IDC_HELP;
+            m = 34;
+            break;
+        case (35):
+            curs =IDC_UPARROW;
+            m = 35;
+            break;
+        case (36):
+            curs = IDC_IBEAM;
+            m = 36;
+            break;
+        case (37):
+            curs = IDC_WAIT;
+            m = 37;
+            break;
+        default:
+            m = LOWORD(wParam);
+            break;
+
+        }
+    }
+    break;
+    case WM_SETCURSOR:
         if (LOWORD(lParam) == HTCLIENT)
         {
             SetCursor(LoadCursor(NULL,curs));
             return TRUE;
         }
         break;
-        case WM_DESTROY:
-            PostQuitMessage (0);       /* send a WM_QUIT to the message queue */
-            break;
-        default:                      /* for messages that we don't deal with */
-            return DefWindowProc (hwnd, message, wParam, lParam);
+    case WM_DESTROY:
+        PostQuitMessage (0);       /* send a WM_QUIT to the message queue */
+        break;
+    default:                      /* for messages that we don't deal with */
+        return DefWindowProc (hwnd, message, wParam, lParam);
     }
 
     return 0;
