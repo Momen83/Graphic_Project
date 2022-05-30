@@ -1,4 +1,4 @@
-/*
+ /*
 a. Change the background of window to be white
 b. Try to change the shape of your window mouse
 c. User must interact with window using mouse only
@@ -33,6 +33,9 @@ m. Clipping point and line
 #include<sstream>
 
 using namespace std; //to make combination between console and my window.
+
+int Num_of_Points = 0;
+int counter = 0;
 struct Vertex
 {
     double x,y;
@@ -150,116 +153,78 @@ void DrawLine_DDA(HDC hdc, int x1,int y1,int x2,int y2,COLORREF c)
 }
 
 /////////////////////////////////////////////////////////////////////
-//////////////MIDPOINT ALGORITHM FOR LINE ///////////////////////////
-void BresenhamLine(HDC hdc, int x1,int y1,int x2,int y2,COLORREF c)
+//////////////MIDPOINT ALGORITHM FOR LINE //////////////////////////
+void BresenhamLine(HDC hdc,int x1,int y1,int x2,int y2, int c)
 {
-    int dx=x2-x1;
-    int  dy=y2-y1;
-    if(abs(dx)>abs(dy))
+    int x, y, dx, dy, Adx, Ady, dAdy, dAdx, x_1, y_1, x_2, y_2;
+    dx = x2 - x1;
+    dy = y2 - y1;
+    Adx = abs(dx);
+    Ady = abs(dy);
+    dAdy = 2 * Ady;
+    dAdx = 2 * Adx;
+    x_1 = dAdy - Adx;
+    y_1 = dAdx - Ady;
+    if(Ady <= Adx)
     {
-        if(dx<=0)
+        if( dx >= 0)
         {
-            swap(x1,x2);
-            swap(y1,y2);
-            dx=-dx;
-            dy=-dy;
-        }
-        if(dy>=0)
-        {
-            int x=x1;
-            int y=y1;
-            while(x<x2)
-            {
-                int d=(2*y+1-(2*y1))*dx-(2*(x+1-x1)*dy);
-                if(d<=0)
-                {
-                    x++;
-                    y++;
-                    SetPixel(hdc,x,y,c);
-                }
-                else
-                {
-                    x++;
-                    SetPixel(hdc,x,y,c);
-                }
-            }
-
+            x = x1;
+            y = y1;
+            x_2 = x2;
         }
         else
         {
-            int x=x1;
-            int y=y1;
-            while(x<x2)
+            x = x2;
+            y = y2;
+            x_2 = x1;
+        }
+        SetPixel(hdc, x, y, c);
+        for(int i = 0 ; x < x_2 ; i++)
+        {
+            x++;
+            if(x_1 < 0)
+                x_1 += dAdy;
+            else
             {
-                int d=((((2*y)+1)-(2*y1))*dx)-(2*(x+1-x1)*abs(dy));
-                if(d<=0)
-                {
-                    x++;
-                    y--;
-                    SetPixel(hdc,x,y,c);
-                }
+                if((dx < 0 && dy < 0) || (dx > 0 && dy > 0))
+                    y++;
                 else
-                {
-
-                    x++;
-                    SetPixel(hdc,x,y,c);
-                }
+                    y--;
+                x_1 += 2 * (Ady-Adx);
             }
-
-
+            SetPixel(hdc, x, y, c);
         }
     }
-    else //(abs(dy) > abs(dx)
+    else
     {
-        if(dy<0)
+        if( dy >= 0)
         {
-            swap(x1,x2);
-            swap(y1,y2);
-            dx=-dx;
-            dy=-dy;
+            x = x1;
+            y = y1;
+            y_2 = y2;
         }
-        if(dx>=0)
+        else
         {
-            int x=x1;
-            int y=y1;
-            while(y<y2)
+            x = x2;
+            y = y2;
+            y_2 = y1;
+        }
+        SetPixel(hdc, x, y, c);
+        for(int i = 0; y < y_2 ; i++)
+        {
+            y++;
+            if(y_1 <= 0)
+                y_1 += dAdx;
+            else
             {
-                int d=2*(((y+1)-y1)*dx)-((((2*x)+1)-(2*x1))*dy);
-                if(d>=0)
-                {
+                if((dx < 0 && dy < 0) || (dx > 0 && dy > 0))
                     x++;
-                    y++;
-                    SetPixel(hdc,x,y,c);
-
-                }
                 else
-                {
-                    y++;
-                    SetPixel(hdc,x,y,c);
-                }
-            }
-
-        }
-        else// dx<0
-        {
-            int x=x1;
-            int y=y1;
-            while(y<y2)
-            {
-                int d=2*(y+1-y1)*abs(dx)-(((2*x+1)-(2*x1))*dy);
-                if(d>=0)
-                {
-                    y++;
                     x--;
-                    SetPixel(hdc,x,y,c);
-                }
-
-                else
-                {
-                    y++;
-                    SetPixel(hdc,x,y,c);
-                }
+                y_1 += 2 * (Adx - Ady);
             }
+            SetPixel(hdc, x, y, c);
         }
     }
 }
@@ -275,9 +240,6 @@ void DrawLine_Parametric(HDC hdc,int x1,int y1,int x2,int y2,COLORREF c)
         double y=y1+t*(y2-y1);
         SetPixel(hdc, Round(x), Round(y), c);
     }
-
-
-
 }
 /////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -555,8 +517,11 @@ void DrawEllipsePolar(HDC hdc,int xc,int yc,int r,int r2,COLORREF c)
         SetPixel(hdc, Round(x), Round(y), c);
     }
 }
-/////////////////////////////////////////////////////////////////////
-/////////////////clipping////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////CLIPPING LINE////////////////////////////////////////////
+
 union OutCode
 {
     unsigned All:4;
@@ -565,83 +530,116 @@ union OutCode
         unsigned left:1,top:1,right:1,bottom:1;
     };
 };
-
 OutCode GetOutCode(double x,double y,int xleft,int ytop,int xright,int ybottom)
 {
     OutCode out;
     out.All=0;
-    if(x<xleft)out.left=1;
-    else if(x>xright)out.right=1;
-    if(y<ytop)out.top=1;
-    else if(y>ybottom)out.bottom=1;
+    if(x<xleft)
+        out.left=1;
+    else if(x>xright)
+        out.right=1;
+    if(y<ytop)
+        out.top=1;
+    else if(y>ybottom)
+        out.bottom=1;
     return out;
 }
-
-
-
-
 void VIntersect(double xs,double ys,double xe,double ye,int x,double *xi,double *yi)
 {
-
     *xi=x;
     *yi=ys+(x-xs)*(ye-ys)/(xe-xs);
 }
-
-
 void HIntersect(double xs,double ys,double xe,double ye,int y,double *xi,double *yi)
 {
     *yi=y;
     *xi=xs+(y-ys)*(xe-xs)/(ye-ys);
 }
-
-
-void CohenSuth(HDC hdc,int xs,int ys,int xe,int ye,int xleft,int ytop,int xright,int ybottom,COLORREF c)
+void CohenSuth(HDC hdc,int xs,int ys,int xe,int ye,int xleft,int ytop,int xright,int ybottom, COLORREF colol)
 {
     double x1=xs,y1=ys,x2=xe,y2=ye;
     OutCode out1=GetOutCode(x1,y1,xleft,ytop,xright,ybottom);
     OutCode out2=GetOutCode(x2,y2,xleft,ytop,xright,ybottom);
-
     while( (out1.All || out2.All) && !(out1.All & out2.All))
     {
         double xi,yi;
         if(out1.All)
         {
-            if(out1.left)VIntersect(x1,y1,x2,y2,xleft,&xi,&yi);
-            else if(out1.top)HIntersect(x1,y1,x2,y2,ytop,&xi,&yi);
-            else if(out1.right)VIntersect(x1,y1,x2,y2,xright,&xi,&yi);
-            else HIntersect(x1,y1,x2,y2,ybottom,&xi,&yi);
+            if(out1.left)
+                VIntersect(x1,y1,x2,y2,xleft,&xi,&yi);
+            else if(out1.top)
+                HIntersect(x1,y1,x2,y2,ytop,&xi,&yi);
+            else if(out1.right)
+                VIntersect(x1,y1,x2,y2,xright,&xi,&yi);
+            else
+                HIntersect(x1,y1,x2,y2,ybottom,&xi,&yi);
             x1=xi;
             y1=yi;
             out1=GetOutCode(x1,y1,xleft,ytop,xright,ybottom);
         }
         else
         {
-            if(out2.left)VIntersect(x1,y1,x2,y2,xleft,&xi,&yi);
-            else if(out2.top)HIntersect(x1,y1,x2,y2,ytop,&xi,&yi);
-            else if(out2.right)VIntersect(x1,y1,x2,y2,xright,&xi,&yi);
-            else HIntersect(x1,y1,x2,y2,ybottom,&xi,&yi);
+            if(out2.left)
+                VIntersect(x1,y1,x2,y2,xleft,&xi,&yi);
+            else if(out2.top)
+                HIntersect(x1,y1,x2,y2,ytop,&xi,&yi);
+            else if(out2.right)
+                VIntersect(x1,y1,x2,y2,xright,&xi,&yi);
+            else
+                HIntersect(x1,y1,x2,y2,ybottom,&xi,&yi);
             x2=xi;
             y2=yi;
             out2=GetOutCode(x2,y2,xleft,ytop,xright,ybottom);
         }
     }
-
     if(!out1.All && !out2.All)
     {
-        BresenhamLine(hdc,x1,y1,x2,y2,c);
+
+        MoveToEx(hdc,round(x1),round(y1),NULL);
+        DrawLine_DDA(hdc,x1,y1,x2,y2,colol);
     }
 }
+
+void CliipingLineWithCircle(HDC hdc,int xs,int ys,int xe,int ye,int xc,int yc,int r,COLORREF color)
+{
+    double dt=(double)1.0/std::max(abs(xe-xs),abs(ye-ys));
+    for(double t = 0; t<=1; t+=dt)
+    {
+        double x=xs+t*(xe-xs);
+        double y=ys+t*(ye-ys);
+        int test = (x-xc)*(x-xc) +  (y-yc)*(y-yc) - (r)*(r) ;
+        //cout<<r<<endl;
+        if(test <= 0)
+        {
+            SetPixel(hdc, x, y,color );
+        }
+    }
+}
+
 //////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-//***implement of Clipping point algorithm
+////////////////////////CLIPPING POINT/////////////////////////////////////
+
 void PointClipping(HDC hdc,int x,int y,int xleft,int ytop,int xright,int ybottom,COLORREF color)
 {
     if(x>=xleft && x<= xright && y>=ytop && y<=ybottom)
         SetPixel(hdc,x,y,color);
 }
+void PointClipping(HDC hdc,int x,int y,int xc,int yc,int r,COLORREF color)
+{
+    int test = (x-xc)*(x-xc) +  (y-yc)*(y-yc) - (r)*(r) ;
+    //cout<<r<<endl;
+    if(test <= 0)
+    {
+        SetPixel(hdc, x, y,color );
+        //cout<<"Value is :"<<test<<endl;
+    }
+    //cout<<"Value is :"<<test<<endl;
+}
+
+
+
+
 //////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-//***implement of Clipping Polygn algorithm
+///////////////////////////CLIPPING POLYGON//////////////////////////////
 
 VertexList ClipWithEdge(VertexList p,int edge,IsInFunc In,IntersectFunc Intersect)
 {
@@ -695,10 +693,10 @@ Vertex HIntersect(Vertex& v1,Vertex& v2,int yedge)
     return res;
 }
 
-void PolygonClip(HDC hdc,int xleft,int ytop,int xright,int ybottom)
+void PolygonClip(HDC hdc,point *p,int Size,int xleft,int ytop,int xright,int ybottom)
 {
-    VertexList vlist= {};
-//for(int i=0;i<n;i++)vlist.push_back(Vertex(p[i].x,p[i].y));
+    VertexList vlist;
+    for(int i=0; i<Size; i++)vlist.push_back(Vertex(p[i].x,p[i].y));
     vlist=ClipWithEdge(vlist,xleft,InLeft,VIntersect);
     vlist=ClipWithEdge(vlist,ytop,InTop,HIntersect);
     vlist=ClipWithEdge(vlist,xright,InRight,VIntersect);
@@ -712,7 +710,6 @@ void PolygonClip(HDC hdc,int xleft,int ytop,int xright,int ybottom)
         v1=v2;
     }
 }
-
 /////////////////////////////////////////////
 ////////////Save Points/////////////////////
 struct Save_Point
@@ -997,6 +994,8 @@ void Load(HDC hdc)
 void Clear ()
 {
     Arr_Save_Point.clear();
+    counter=0;
+    Num_of_Points=0;
     //InvalidateRect(hWnd, NULL, TRUE);
 }
 
@@ -1125,11 +1124,13 @@ void addMenu(HWND hwnd)
     AppendMenu(hMenu,MF_POPUP,(UINT_PTR)hquarter,"Quarter Circle");
 
     HMENU hwindow = CreateMenu();
-    AppendMenu(hwindow,MF_STRING,22,"Clipping by Line(Rectangle)");
-    AppendMenu(hwindow,MF_STRING,23,"Clipping by point(Rectangle)");
-    AppendMenu(hwindow,MF_STRING,50,"Clipping by Polygon(Rectangle)");
-    AppendMenu(hwindow,MF_STRING,51,"Clipping by Line(Circle)");
-    AppendMenu(hwindow,MF_STRING,52,"Clipping by Point(Circle)");
+    AppendMenu(hwindow,MF_STRING,50,"Clipping by Line(Rectangle)");
+    AppendMenu(hwindow,MF_STRING,51,"Clipping by Line(Square)");
+    AppendMenu(hwindow,MF_STRING,52,"Clipping by Line(Circle)");
+    AppendMenu(hwindow,MF_STRING,53,"Clipping by point(Rectangle)");
+    AppendMenu(hwindow,MF_STRING,54,"Clipping by Point(Square)");
+    AppendMenu(hwindow,MF_STRING,55,"Clipping by Point(Circle)");
+    AppendMenu(hwindow,MF_STRING,56,"Clipping by Polygon(Rectangle)");
     AppendMenu(hMenu,MF_POPUP,(UINT_PTR)hwindow,"Clipping");
 
     HMENU hFillingByCircles = CreateMenu();
@@ -1162,8 +1163,6 @@ int R;
 int quarter;
 int m;
 int X_start,X_end,Y_start,Y_end,X_left,Y_top,X_right,Y_bottom;
-int Num_of_Points = 0;
-int counter = 0;
 int counter_ell =0;
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -1174,16 +1173,19 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
     {
         x1 = LOWORD(lParam);
         y_1 = HIWORD(lParam);
-        if (m == 22) //Line clipping (Rectangle)
+
+        if (m == 50) //Line clipping (Rectangle)
         {
             if(Num_of_Points == 0)
             {
+                cout<<"Num of Points : "<<Num_of_Points<<endl;
                 X_left=LOWORD(lParam);
                 Y_top=HIWORD(lParam);
                 Num_of_Points++;
             }
             else if (Num_of_Points == 1)
             {
+                cout<<"Num of Points : "<<Num_of_Points<<endl;
                 X_right=LOWORD(lParam);
                 Y_bottom=HIWORD(lParam);
                 Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
@@ -1191,67 +1193,104 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
             }
             else if(Num_of_Points==2)
             {
+                cout<<" Start Point Of line "<< endl;
                 X_start=LOWORD(lParam);
                 Y_start=HIWORD(lParam);
                 Num_of_Points++;
             }
             else if (Num_of_Points==3)
             {
+                cout<<" End Point Of line "<< endl;
                 X_end=LOWORD(lParam);
                 Y_end=HIWORD(lParam);
                 CohenSuth(hdc,X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
-                Num_of_Points=0;
+                Num_of_Points=2;
             }
             Save_Point x("CohenSuth",X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,0,0,0);
             Arr_Save_Point.push_back(x);
         }
 
-        if (m == 51) //Line clipping (Circle)
+        else if (m == 51) //Line clipping (Square)
         {
             if(Num_of_Points == 0)
             {
-                X_left=LOWORD(lParam); //X center.
-                Y_top=HIWORD(lParam);   // Y Center.
+                cout<<"Counter "<<Num_of_Points<<endl;
+                X_left=LOWORD(lParam);
+                Y_top=HIWORD(lParam);
+                X_right =X_left+200;
+                Y_bottom = Y_top+200;
+                Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
+                cout<<"Square Done.\n";
                 Num_of_Points++;
             }
-            else if (Num_of_Points == 1)
+            else if(Num_of_Points==1)
             {
-                X_right=LOWORD(lParam);
-                Y_bottom=HIWORD(lParam);
-                int   r1=sqrt(pow((X_right - X_left),2)+pow((Y_bottom-Y_top),2));
-                Draw_Midpoint_circle(hdc, X_left, Y_top, r1,RGB(0,0,0));
-                //Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
-                Num_of_Points++;
-            }
-            else if(Num_of_Points==2)
-            {
+                cout<<"Start EndPoint.\n";
                 X_start=LOWORD(lParam);
                 Y_start=HIWORD(lParam);
                 Num_of_Points++;
             }
-            else if (Num_of_Points==3)
+            else if (Num_of_Points==2)
             {
+                cout<<"Line Clipping Done.\n";
                 X_end=LOWORD(lParam);
                 Y_end=HIWORD(lParam);
                 CohenSuth(hdc,X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
-                Num_of_Points=0;
+                Num_of_Points=1;
             }
             Save_Point x("CohenSuth",X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,0,0,0);
             Arr_Save_Point.push_back(x);
         }
-
-        else if (m == 23) //clipping point(Rectangle).
+        else if (m== 52)  //Line Clipping (Circle)
         {
-            c = RGB(0,255,0);
+            if(counter == 0)
+            {
+                cout<<"Center Of Circle. "<<endl;
+                X_left=LOWORD(lParam);      //Center
+                Y_top=HIWORD(lParam);
+                counter++;
+            }
+            else if (counter == 1)
+            {
+                cout<<"Circle Window Done "<<endl;
+                X_right=LOWORD(lParam);
+                Y_bottom=HIWORD(lParam);
+                r=sqrt(pow((X_right - X_left),2)+pow((Y_bottom-Y_top),2));
+                DrawCircleMidPoint(hdc, X_left, Y_top, r,RGB(0,0,0));     //radius.
+                counter++;
+            }
+            else if(counter==2)
+            {
+                cout<<"Start Point"<<endl;
+                X_start=LOWORD(lParam);
+                Y_start=HIWORD(lParam);
+                counter++;
+            }
+            else if(counter==3)
+            {
+                cout<<"End Point"<<endl;
+                X_end=LOWORD(lParam);
+                Y_end=HIWORD(lParam);
+                CliipingLineWithCircle(hdc, X_start,Y_start,X_end,Y_end,X_left,  Y_top,r,c);
+                //PointClipping(hdc,X_start,Y_start, X_left , Y_top , r , c);
+                counter=2;
+            }
+
+        }
+        else if (m == 53) //Point clipping (Rectangle).
+        {
+            //c = RGB(0, 0,255);
 
             if(counter == 0)
             {
+                cout<<"Counter " <<counter<<endl;
                 X_left=LOWORD(lParam);
                 Y_top=HIWORD(lParam);
                 counter++;
             }
             else if (counter == 1)
             {
+                cout<<"Counter " <<counter<<endl;
                 X_right=LOWORD(lParam);
                 Y_bottom=HIWORD(lParam);
                 Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
@@ -1259,87 +1298,136 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
             }
             else if(counter==2)
             {
+                // cout<<"Counter " <<counter<<endl;
                 X_start=LOWORD(lParam);
                 Y_start=HIWORD(lParam);
-                counter++;
-            }
-            else if (counter==3)
-            {
-                X_end=LOWORD(lParam);
-                Y_end=HIWORD(lParam);
-                //PolygonClip(hdc ,X_left , Y_top , X_right , Y_bottom);
-                PointClipping(hdc,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
-                counter=0;
+                PointClipping(hdc,X_start,Y_start, X_left, Y_top,X_right,Y_bottom,c);
+                counter=2;
             }
         }
-        if (m == 52) //Point clipping (Circle)
+        else if (m == 54) //Point clipping (Square)
         {
             if(Num_of_Points == 0)
             {
-                X_left=LOWORD(lParam); //X center.
-                Y_top=HIWORD(lParam);   // Y Center.
+                cout<<"Counter "<<Num_of_Points<<endl;
+                X_left=LOWORD(lParam);
+                Y_top=HIWORD(lParam);
+                X_right =X_left+200;
+                Y_bottom = Y_top+200;
+                Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
+                cout<<"Square Done.\n";
                 Num_of_Points++;
             }
             else if (Num_of_Points == 1)
             {
-                X_right=LOWORD(lParam);
-                Y_bottom=HIWORD(lParam);
-                int   r1=sqrt(pow((X_right - X_left),2)+pow((Y_bottom-Y_top),2));
-                Draw_Midpoint_circle(hdc, X_left, Y_top, r1,RGB(255,255,255));
-                //Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
-                Num_of_Points++;
-            }
-            else if(Num_of_Points==2)
-            {
+                cout<<"Point Clipping Done "<<endl;
                 X_start=LOWORD(lParam);
                 Y_start=HIWORD(lParam);
-                Num_of_Points++;
-            }
-            else if (Num_of_Points==3)
-            {
-                X_end=LOWORD(lParam);
-                Y_end=HIWORD(lParam);
-                PointClipping(hdc,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
-                Num_of_Points=0;
+                PointClipping(hdc,X_start,Y_start,X_left,Y_top,X_right,Y_bottom,c);
+                Num_of_Points=1;
             }
             Save_Point x("CohenSuth",X_start,Y_start,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,0,0,0);
             Arr_Save_Point.push_back(x);
         }
-
-        else if (m == 50) //clipping Polygon (Rectangle)
+        else if (m==55)   //Point clipping (Circle)
         {
-            c = RGB(0,255,0);
+            if(counter == 0)
+            {
+                cout<<"Center Of Circle. "<<endl;
+                X_left=LOWORD(lParam);      //Center
+                Y_top=HIWORD(lParam);
+                counter++;
+            }
+            else if (counter == 1)
+            {
+                cout<<"Circle Window Done "<<endl;
+                X_right=LOWORD(lParam);
+                Y_bottom=HIWORD(lParam);
+                r=sqrt(pow((X_right - X_left),2)+pow((Y_bottom-Y_top),2));
+                DrawCircleMidPoint(hdc, X_left, Y_top, r,RGB(0,0,0));     //radius.
+                counter++;
+            }
+            else if(counter==2)
+            {
+                cout<<"Clipping Point (Circle) "<<endl;
+                X_start=LOWORD(lParam);
+                Y_start=HIWORD(lParam);
+                //cout<<r1<<endl;
+                PointClipping(hdc,X_start,Y_start, X_left, Y_top, r, c);
+                counter=2;
+            }
+
+        }
+        else if (m == 56) //clipping Polygon (Rectangle)
+        {
+
+            point P[5];
 
             if(counter == 0)
             {
+                cout<<"Counter " <<counter<<endl;
                 X_left=LOWORD(lParam);
                 Y_top=HIWORD(lParam);
                 counter++;
             }
             else if (counter == 1)
             {
+                cout<<"Counter " <<counter<<endl;
                 X_right=LOWORD(lParam);
                 Y_bottom=HIWORD(lParam);
                 Rectangle(hdc, X_left,Y_top,X_right,Y_bottom);
+                cout<<"Clipping Window done " <<counter<<endl;
                 counter++;
             }
             else if(counter==2)
             {
-                X_start=LOWORD(lParam);
+                cout<<"Counter " <<counter<<endl;
+                X_start=LOWORD(lParam);   //P[0]
                 Y_start=HIWORD(lParam);
+                P[0].x= X_start;
+                P[0].y= Y_start;
                 counter++;
             }
             else if (counter==3)
             {
-                X_end=LOWORD(lParam);
+                cout<<"Counter " <<counter<<endl;
+                X_end=LOWORD(lParam);  //P[1]
                 Y_end=HIWORD(lParam);
-                PolygonClip(hdc,X_left, Y_top, X_right, Y_bottom);
-                //PointClipping(hdc,X_end,Y_end,X_left,Y_top,X_right,Y_bottom,c);
-                counter=0;
+                P[1].x= X_start;
+                P[1].y= Y_start;
+                counter++;
+            }
+            else if (counter==4)
+            {
+                cout<<"Counter " <<counter<<endl;
+                X_end=LOWORD(lParam);  //P[1]
+                Y_end=HIWORD(lParam);
+                P[2].x= X_start;
+                P[2].y= Y_start;
+                counter++;
+            }
+            else if (counter==5)
+            {
+                cout<<"Counter " <<counter<<endl;
+                X_end=LOWORD(lParam);  //P[1]
+                Y_end=HIWORD(lParam);
+                P[3].x= X_start;
+                P[3].y= Y_start;
+                counter++;
+            }
+            else if (counter==6)
+            {
+                X_end=LOWORD(lParam);  //P[1]
+                Y_end=HIWORD(lParam);
+                P[4].x= X_start;
+                P[4].y= Y_start;
+                PolygonClip(hdc, P,5,X_left, Y_top, X_right, Y_bottom);
+                counter++;
             }
         }
+
         //////////////////////////////////////////////////////
-        if(m == 5 ||m == 6) //Draw ellipse (Direct-polar)
+        else if(m == 5 ||m == 6) //Draw ellipse (Direct-polar)
         {
             if (m==5)
             {
