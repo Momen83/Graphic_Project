@@ -2704,7 +2704,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
             break;
         case(2):
             m = 2;
-            cout << "Draw Line by DDA\n\n";
+            cout << "Draw Line by DDA\n\n LeftClick then RightClick \n";
             break;
         case(3):
             m=3;
@@ -2716,27 +2716,27 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
             break;
         case (5):
             m = 5;
-            cout<<" Draw Direct ellipse \n\n";
+            cout<<" Draw Direct ellipse \n\n FirstClick for 1st R then 2nd for 2nd R then Center point\n";
             break;
         case(6):
             m =6;
-            cout<<"Draw polar ellipse \n\n";
+            cout<<"Draw polar ellipse \n\n FirstClick for 1st R then 2nd for 2nd R then Center point\n";
             break;
         case (7):
             m=7;
-            cout<<"Draw direct circle \n\n";
+            cout<<"Draw direct circle \n\n FirstClick for Center then R \n";
             break;
         case(8):
             m =8;
-            cout<<"Draw Polar circle \n\n";
+            cout<<"Draw Polar circle \n\n  FirstClick for Center then R \n";
             break;
         case(9):
             m = 9;
-            cout<<"Draw Mid Point circle \n\n";
+            cout<<"Draw Mid Point circle \n\n  FirstClick for Center then R \n";
             break;
         case (26):
             m = 26;
-            cout<<"Draw circle by Modified Mid point \n\n";
+            cout<<"Draw circle by Modified Mid point \n\n  FirstClick for Center then R \n";
             break;
         case(10):
             cout<<"Draw by black color \n\n";
