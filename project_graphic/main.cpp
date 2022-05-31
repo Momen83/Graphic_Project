@@ -1,20 +1,7 @@
- /*
-a. Change the background of window to be white
-b. Try to change the shape of your window mouse
-c. User must interact with window using mouse only
-d. Try to make combination between your console and window
-e. Give me an option to choose shape color before drawing from menu
-f. Implement item to clear screen from shapes
-g. Implement save function for all data in screen
-h. Implement load function to load data from files
-i. Implement line algorithms [DDA, Midpoint and parametric]
-j. Implement Circle algorithms (Direct, Polari iterative Polar, midpoint and
-modified Midpoint).
-k. Filling Circle with lines after taking filling quarter from user
-l. Ellipse Algorithms [Direct and polar]
-m. Clipping point and line
-*/
+
 ////////////////////////////////////////////////////////////////////////////////////////
+
+
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -31,6 +18,9 @@ m. Clipping point and line
 #include<math.h>
 #include<fstream>
 #include<sstream>
+#include <list>
+#include <stack>
+#define MAXENTRIES 600
 
 using namespace std; //to make combination between console and my window.
 
@@ -38,7 +28,7 @@ int Num_of_Points = 0;
 int counter = 0;
 struct Vertex
 {
-    double x,y;
+    int x,y;
     Vertex(int x1=0,int y1=0)
     {
         x=x1;
@@ -635,9 +625,6 @@ void PointClipping(HDC hdc,int x,int y,int xc,int yc,int r,COLORREF color)
     //cout<<"Value is :"<<test<<endl;
 }
 
-
-
-
 //////////////////////////////////////////////////////////////////////////
 ///////////////////////////CLIPPING POLYGON//////////////////////////////
 
@@ -693,10 +680,10 @@ Vertex HIntersect(Vertex& v1,Vertex& v2,int yedge)
     return res;
 }
 
-void PolygonClip(HDC hdc,point *p,int Size,int xleft,int ytop,int xright,int ybottom)
+void PolygonClip(HDC hdc,POINT *P,int Size,int xleft,int ytop,int xright,int ybottom)
 {
     VertexList vlist;
-    for(int i=0; i<Size; i++)vlist.push_back(Vertex(p[i].x,p[i].y));
+    for(int i=0; i<Size; i++)vlist.push_back(Vertex(P[i].x,P[i].y));
     vlist=ClipWithEdge(vlist,xleft,InLeft,VIntersect);
     vlist=ClipWithEdge(vlist,ytop,InTop,HIntersect);
     vlist=ClipWithEdge(vlist,xright,InRight,VIntersect);
@@ -710,15 +697,325 @@ void PolygonClip(HDC hdc,point *p,int Size,int xleft,int ytop,int xright,int ybo
         v1=v2;
     }
 }
+struct Vector
+{
+    double v[2];
+    Vector(double x = 0, double y = 0)
+    {
+        v[0] = x;
+        v[1] = y;
+    }
+    double& operator[](int i)
+    {
+        return v[i];
+    }
+};
+struct Vector2
+{
+    double x,y;
+    Vector2(double a=0,double b=0)
+    {
+        x=a;
+        y=b;
+    }
+};
+class Vector4
+{
+    double v[4];
+public:
+    Vector4(double a=0,double b=0,double c=0,double d=0)
+    {
+        v[0]=a;
+        v[1]=b;
+        v[2]=c;
+        v[3]=d;
+    }
+    Vector4(double a[])
+    {
+        memcpy(v,a,4*sizeof(double));
+    }
+    double& operator[](int i)
+    {
+        return v[i];
+    }
+};
+class Matrix4
+{
+    Vector4 M[4];
+public:
+    Matrix4(double A[])
+    {
+        memcpy(M,A,16*sizeof(double));
+    }
+    Vector4& operator[](int i)
+    {
+        return M[i];
+    }
+};
+Vector4 operator*(Matrix4 M,Vector4& b) // right multiplication of M by b
+{
+    Vector4 res;
+    for(int i=0; i<4; i++)
+        for(int j=0; j<4; j++)
+            res[i]+=M[i][j]*b[j];
+    return res;
+}
+double DotProduct(Vector4& a,Vector4& b) //multiplying a raw vector by a column vector
+{
+    return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3];
+}
+Vector4 GetHermiteCoeff(double x0,double s0,double x1,double s1)
+{
+    static double H[16]= {2,1,-2,1,-3,-2,3,-1,0,1,0,0,1,0,0,0};
+    static Matrix4 basis(H);
+    Vector4 v(x0,s0,x1,s1);
+    return basis*v;
+}
+void DrawHermiteCurve2(HDC hdc,Vector2& P0,Vector2& T0,Vector2& P1,Vector2& T1,int
+                       numpoints)
+{
+    Vector4 xcoeff=GetHermiteCoeff(P0.x,T0.x,P1.x,T1.x);
+    Vector4 ycoeff=GetHermiteCoeff(P0.y,T0.y,P1.y,T1.y);
+    if(numpoints<2)return;
+    double dt=1.0/(numpoints-1);
+    for(double t=0; t<=1; t+=dt)
+    {
+        Vector4 vt;
+        vt[3]=1;
+        for(int i=2; i>=0; i--)vt[i]=vt[i+1]*t;
+        int x=round(DotProduct(xcoeff,vt));
+        int y=round(DotProduct(ycoeff,vt));
+        if(t==0)MoveToEx(hdc,x,y,NULL);
+        else LineTo(hdc,x,y);
+    }
+}
+
+void DrawHermiteCurve(HDC hdc,int px1, int py1, int Tx1, int Ty1,  int px2, int py2,  int Tx2, int  Ty2, COLORREF c)
+{
+    double a0 = px1, a1 = Tx1,
+           a2 = -3 * px1 - 2 * Tx1 + 3 * px2 - Tx2,
+           a3 = 2 * px1 + Tx1 - 2 * px2 + Tx2;
+    double b0 = py1, b1 = Ty1,
+           b2 = -3 * py1 - 2 * Ty1 + 3 * py2 - Ty2,
+           b3 = 2 * py1 + Ty1 - 2 * py2 + Ty2;
+    for (double t = 0; t <= 1; t += 0.001)
+    {
+        double t2 = t*t, t3 = t2*t;
+        double x = a0 + a1*t + a2*t2 + a3*t3;
+        double y = b0 + b1*t + b2*t2 + b3*t3;
+        SetPixel(hdc, Round(x), Round(y), c);
+    }
+}
+void DrawLine1(HDC hdc, int x1, int y1, int x2, int y2, COLORREF c)
+{
+    int dx = x2 - x1;
+    int dy = y2 - y1;
+    if (abs(dy) <= abs(dx))
+    {
+        if (x1 > x2)swapp(x1, y1, x2, y2);
+        SetPixel(hdc, x1, y1, c);
+        int x = x1;
+        while (x < x2)
+        {
+            x++;
+            double y = y1 + (double)(x - x1)*dy / dx;
+            SetPixel(hdc, x, Round(y), c);
+
+        }
+    }
+    else
+    {
+        if (y1 > y2)swapp(x1, y1, x2, y2);
+        SetPixel(hdc, x1, y1, c);
+        int y = y1;
+        while (y < y2)
+        {
+            y++;
+            double x = x1 + (double)(y - y1)*dx / dy;
+            SetPixel(hdc, Round(x), y, c);
+        }
+    }
+
+}
+void DrawCardinalSpline(HDC hdc,Vector2 P[],int n,double c,int numpix)
+{
+    double c1=1-c;
+    Vector2 T0(c1*(P[2].x-P[0].x),c1*(P[2].y-P[0].y));
+    for(int i=2; i<n-1; i++)
+    {
+        Vector2 T1(c1*(P[i+1].x-P[i-1].x),c1*(P[i+1].y-P[i-1].y));
+        DrawHermiteCurve2(hdc,P[i-1],T0,P[i],T1,numpix);
+        T0=T1;
+    }
+}
+void DrawSquare(HDC hdc, int x1, int y1, int x2, int y2, COLORREF c, COLORREF c2)
+{
+    int distance= sqrt( pow(x1-x2, 2) + pow(y1-y2, 2));
+    int x3=x2, y3=y2+distance, x4=x1, y4=y1+distance;
+    DrawLine1(hdc, x1, y1, x2, y2, c);
+    DrawLine1(hdc, x2, y2, x3, y3, c);
+    DrawLine1(hdc, x3, y3, x4, y4, c);
+    DrawLine1(hdc, x4, y4, x1, y1, c);
+    int z=x1+1;
+    while(z<x2)
+    {
+        DrawHermiteCurve(hdc, z, y1+1, 0, 0, z, y4-1, 0, 0, c2);
+        z++;
+    }
+
+}
+void DrawBezierCurve(HDC hdc,int px1, int py1, int px2, int py2,  int px3, int py3,  int px4, int  py4, COLORREF c)
+{
+    int tx1=0, tx2=0;
+    int ty1= 0, ty2=0;
+    DrawHermiteCurve(hdc,px1, py1, tx1, ty1, px3, py3, tx2, ty2, c );
+
+
+}
+void DrawRectangle(HDC hdc, int x1, int y1, int x2, int y2, int x3, int y3, COLORREF c, COLORREF c2)
+{
+    int length= sqrt( pow(x1-x2, 2) + pow(y1-y2, 2)), width= sqrt( pow(x3-x2, 2) + pow(y3-y2, 2));
+    int  x4=x1, y4=y1+width;
+    DrawLine1(hdc, x1, y1, x2, y2, c);
+    DrawLine1(hdc, x2, y2, x3, y3, c);
+    DrawLine1(hdc, x3, y3, x4, y4, c);
+    DrawLine1(hdc, x4, y4, x1, y1, c);
+    int z=y1+1;
+    while(z<y4)
+    {
+        DrawBezierCurve(hdc, x1+1, z,0,0,x2-1, z, 0,0, c2);
+        z++;
+    }
+}
+struct Entry
+{
+    int xmin,xmax;
+};
+#define MAXENTRIES 600
+void InitEntries(Entry table[])
+{
+    for(int i=0; i < MAXENTRIES; i++)
+    {
+        table[i].xmin =  INT_MAX;
+        table[i].xmax = - INT_MAX;
+    }
+}
+void ScanEdge(POINT v1,POINT v2,Entry table[])
+{
+    if(v1.y==v2.y)return;
+    if(v1.y>v2.y)swap(v1,v2);
+    double minv=(double)(v2.x-v1.x)/(v2.y-v1.y);
+    double x=v1.x;
+    int y=v1.y;
+    while(y<v2.y)
+    {
+        if(x<table[y].xmin)table[y].xmin=(int)ceil(x);
+        if(x>table[y].xmax)table[y].xmax=(int)floor(x);
+        y++;
+        x+=minv;
+    }
+}
+void DrawSanLines(HDC hdc,Entry table[],COLORREF color)
+{
+    for(int y=0; y<MAXENTRIES; y++)
+        if(table[y].xmin<table[y].xmax)
+            for(int x=table[y].xmin; x<=table[y].xmax; x++)
+                SetPixel(hdc,x,y,color);
+}
+void ConvexFill(HDC hdc,POINT p[],int n,COLORREF color)
+{
+    Entry *table=new Entry[MAXENTRIES];
+    InitEntries(table);
+    POINT v1=p[n-1];
+    for(int i=0; i<n; i++)
+    {
+        POINT v2=p[i];
+        ScanEdge(v1,v2,table);
+        v1=p[i];
+    }
+    DrawSanLines(hdc,table,color);
+    delete table;
+}
+struct EdgeRec
+{
+    double x;
+    double minv;
+    int ymax;
+    bool operator<(EdgeRec r)
+    {
+        return x<r.x;
+    }
+};
+typedef list<EdgeRec> EdgeList;
+
+EdgeRec InitEdgeRec(POINT& v1,POINT& v2)
+{
+    if(v1.y>v2.y)swap(v1,v2);
+    EdgeRec rec;
+    rec.x=v1.x;
+    rec.ymax=v2.y;
+    rec.minv=(double)(v2.x-v1.x)/(v2.y-v1.y);
+    return rec;
+}
+
+void InitEdgeTable(POINT *polygon,int n,EdgeList table[])
+{
+    POINT v1=polygon[n-1];
+    for(int i=0; i<n; i++)
+    {
+        POINT v2=polygon[i];
+        if(v1.y==v2.y)
+        {
+            v1=v2;
+            continue;
+        }
+        EdgeRec rec=InitEdgeRec(v1, v2);
+        table[v1.y].push_back(rec);
+        v1=polygon[i];
+    }
+}
+
+void GeneralPolygonFill(HDC hdc,POINT *polygon,int n,COLORREF c)
+{
+    EdgeList *table=new EdgeList [MAXENTRIES];
+    InitEdgeTable(polygon,n,table);
+    int y=0;
+    while(y<MAXENTRIES && table[y].size()==0)y++;
+    if(y==MAXENTRIES)return;
+    EdgeList ActiveList=table[y];
+    while (ActiveList.size()>0)
+    {
+        ActiveList.sort();
+        for(EdgeList::iterator it=ActiveList.begin(); it!=ActiveList.end(); it++)
+        {
+            int x1=(int)ceil(it->x);
+            it++;
+            int x2=(int)floor(it->x);
+            for(int x=x1; x<=x2; x++)SetPixel(hdc,x,y,c);
+        }
+        y++;
+        EdgeList::iterator it=ActiveList.begin();
+        while(it!=ActiveList.end())
+            if(y==it->ymax) it=ActiveList.erase(it);
+            else it++;
+        for(EdgeList::iterator it=ActiveList.begin(); it!=ActiveList.end(); it++)
+            it->x+=it->minv;
+        ActiveList.insert(ActiveList.end(),table[y].begin(),table[y].end());
+    }
+    delete[] table;
+}
+POINT P[5];
+Vector2 Vec[5];
 /////////////////////////////////////////////
 ////////////Save Points/////////////////////
 struct Save_Point
 {
     string Function_Name;
-    int x1 =0,x2 =0;
-    int y1 =0,y2 =0;
+    int x1 =0,x2 =0, x3=0, x4=0, x5=0;
+    int y1 =0,y2 =0, y3=0, y4=0, y5=0;
     int R =0,r2 =0;
     int Rc,Gc,Bc;
+    int Rc2,Gc2,Bc2;
     int quarter;
     point _leftBottom = point(0,0);
     point _rightTop = point(0,0);
@@ -739,6 +1036,61 @@ struct Save_Point
         this->Rc=Rc;
         this->Gc=Gc;
         this->Bc=Bc;
+    }
+    Save_Point(string Function_Name,int x1,int y1,int x2,int y2,int Rc,int Gc,int Bc,int Rc2,int Gc2,int Bc2)   //Square
+    {
+        this->Function_Name=Function_Name;
+        this->x1=x1;
+        this->x2=x2;
+        this->y1=y1;
+        this->y2=y2;
+        this->Rc=Rc;
+        this->Gc=Gc;
+        this->Bc=Bc;
+
+        this->Rc2=Rc2;
+        this->Gc2=Gc2;
+        this->Bc2=Bc2;
+    }
+    Save_Point(string Function_Name,int x1,int y1,int x2,int y2, int x3, int y3,int Rc,int Gc,int Bc,int Rc2,int Gc2,int Bc2)     //Rectangle
+    {
+        this->Function_Name=Function_Name;
+        this->x1=x1;
+        this->x2=x2;
+        this->x3=x3;
+
+        this->y1=y1;
+        this->y2=y2;
+        this->y3=y3;
+
+        this->Rc=Rc;
+        this->Gc=Gc;
+        this->Bc=Bc;
+
+        this->Rc2=Rc2;
+        this->Gc2=Gc2;
+        this->Bc2=Bc2;
+    }
+    Save_Point(string Function_Name,int x1,int y1,int x2,int y2, int x3, int y3, int x4, int y4, int x5, int y5, int Rc,int Gc,int Bc )        //Convex and Non convex filling
+    {
+        this->Function_Name=Function_Name;
+        this->x1=x1;
+        this->x2=x2;
+        this->x3=x3;
+        this->x4=x4;
+        this->x5=x5;
+
+        this->y1=y1;
+        this->y2=y2;
+        this->y3=y3;
+        this->y4=y4;
+        this->y5=y5;
+
+        this->Rc=Rc;
+        this->Gc=Gc;
+        this->Bc=Bc;
+
+
     }
 
     Save_Point(string Function_Name,int x1,int y1,int x2,int y2,int xleft,int ytop,int xright,int ybottom,int Rc,int Gc,int Bc)//clipping line
@@ -837,6 +1189,30 @@ void Save()
         if(it->Function_Name=="DPCircleFilling")
         {
             data += it->Function_Name+ ","+to_string(it->x1)+","+to_string(it->y1)+","+to_string(it->R)+","+to_string(it->quarter)+","+to_string(it->Rc)+","+to_string(it->Gc)+","+to_string(it->Bc)+"\n";
+        }
+
+
+        else if(it->Function_Name=="DSqHer")
+        {
+            data += it->Function_Name+ ","+to_string(it->x1)+","+to_string(it->y1)+","+to_string(it->x2)+","+to_string(it->y2)+","+to_string(it->Rc)+","+to_string(it->Gc)+","+to_string(it->Bc)+
+                    ","+to_string(it->Rc2)+","+to_string(it->Gc2)+","+to_string(it->Bc2)+"\n";
+        }
+        else if(it->Function_Name=="DRecBez")
+        {
+            data += it->Function_Name+ ","+to_string(it->x1)+","+to_string(it->y1)+","+to_string(it->x2)+","+to_string(it->y2)+","+to_string(it->x3)+","+to_string(it->y3)+","
+                    +to_string(it->Rc)+","+to_string(it->Gc)+","+to_string(it->Bc)+","+to_string(it->Rc2)+","+to_string(it->Gc2)+","+to_string(it->Bc2)+"\n";
+        }
+        else if(it->Function_Name=="ConvexFill")
+        {
+            data += (it->Function_Name+ ","+to_string(it->x1)+","+to_string(it->y1)+","+to_string(it->x2)+
+                     ","+to_string(it->y2)+","+to_string(it->x3)+","+to_string(it->y3)+ ","+to_string(it->x4)+","+to_string(it->y4) + ","+to_string(it->x5)+","+to_string(it->y5)
+                     +","+to_string(it->Rc)+","+to_string(it->Gc)+","+to_string(it->Bc)+"\n");
+        }
+        else if(it->Function_Name=="GenFill")
+        {
+            data += (it->Function_Name+ ","+to_string(it->x1)+","+to_string(it->y1)+","+to_string(it->x2)+
+                     ","+to_string(it->y2)+","+to_string(it->x3)+","+to_string(it->y3)+ ","+to_string(it->x4)+","+to_string(it->y4) + ","+to_string(it->x5)+","+to_string(it->y5)
+                     +","+to_string(it->Rc)+","+to_string(it->Gc)+","+to_string(it->Bc)+"\n");
         }
 
 
@@ -961,6 +1337,72 @@ void Load(HDC hdc)
             Arr_Save_Point.push_back(x);
         }
 
+        else   if(Fun_Load[0]=="DSqHer")
+        {
+            //stoi() is a function to covert string to integer
+            COLORREF c =RGB(stoi(Fun_Load[5]),stoi(Fun_Load[6]),stoi(Fun_Load[7]));
+            COLORREF c2 =RGB(stoi(Fun_Load[8]),stoi(Fun_Load[9]),stoi(Fun_Load[10])); //the index of colors
+            DrawSquare(hdc,stoi(Fun_Load[1]),stoi(Fun_Load[2]),stoi(Fun_Load[3]),stoi(Fun_Load[4]),c, c2);
+            Save_Point x(Fun_Load[0],stoi(Fun_Load[1]),stoi(Fun_Load[2]),stoi(Fun_Load[3]),stoi(Fun_Load[4]),stoi(Fun_Load[5]),stoi(Fun_Load[6]),stoi(Fun_Load[7]), stoi(Fun_Load[8]),stoi(Fun_Load[9]),stoi(Fun_Load[10]));
+            Arr_Save_Point.push_back(x);
+
+
+        }
+        else   if(Fun_Load[0]=="DRecBez")
+        {
+            //stoi() is a function to covert string to integer
+            COLORREF c =RGB(stoi(Fun_Load[7]),stoi(Fun_Load[8]),stoi(Fun_Load[9]));
+            COLORREF c2 =RGB(stoi(Fun_Load[10]),stoi(Fun_Load[11]),stoi(Fun_Load[12])); //the index of colors
+            DrawRectangle(hdc,stoi(Fun_Load[1]),stoi(Fun_Load[2]),stoi(Fun_Load[3]),stoi(Fun_Load[4]),stoi(Fun_Load[5]),stoi(Fun_Load[6]),c, c2);
+            Save_Point x(Fun_Load[0],stoi(Fun_Load[1]),stoi(Fun_Load[2]),stoi(Fun_Load[3]),stoi(Fun_Load[4]),stoi(Fun_Load[5]),stoi(Fun_Load[6]),stoi(Fun_Load[7]), stoi(Fun_Load[8]),stoi(Fun_Load[9]),stoi(Fun_Load[10]),stoi(Fun_Load[11]),stoi(Fun_Load[12]));
+            Arr_Save_Point.push_back(x);
+
+
+        }
+        else  if(Fun_Load[0]=="ConvexFill")
+        {
+            //stoi() is a function to covert string to integer
+            COLORREF c =RGB(stoi(Fun_Load[11]),stoi(Fun_Load[12]),stoi(Fun_Load[13]));
+            P[0].x=stoi(Fun_Load[1]);
+            P[0].y=stoi(Fun_Load[2]);
+            P[1].x=stoi(Fun_Load[3]);
+            P[1].y=stoi(Fun_Load[4]);
+            P[2].x=stoi(Fun_Load[5]);
+            P[2].y=stoi(Fun_Load[6]);
+            P[3].x=stoi(Fun_Load[7]);
+            P[3].y=stoi(Fun_Load[8]);
+            P[4].x=stoi(Fun_Load[9]);
+            P[4].y=stoi(Fun_Load[10]);
+            Polygon(hdc, P, 5);
+            ConvexFill(hdc, P, 5,c );
+            Save_Point x(Fun_Load[0],stoi(Fun_Load[1]),stoi(Fun_Load[2]),stoi(Fun_Load[3]),stoi(Fun_Load[4]),stoi(Fun_Load[5]),stoi(Fun_Load[6]),stoi(Fun_Load[7]), stoi(Fun_Load[8]),stoi(Fun_Load[9]),stoi(Fun_Load[10])
+                         ,stoi(Fun_Load[11]),stoi(Fun_Load[12]),stoi(Fun_Load[13]));
+            Arr_Save_Point.push_back(x);
+
+        }
+
+        else  if(Fun_Load[0]=="GenFill")
+        {
+            //stoi() is a function to covert string to integer
+            COLORREF c =RGB(stoi(Fun_Load[11]),stoi(Fun_Load[12]),stoi(Fun_Load[13]));
+            P[0].x=stoi(Fun_Load[1]);
+            P[0].y=stoi(Fun_Load[2]);
+            P[1].x=stoi(Fun_Load[3]);
+            P[1].y=stoi(Fun_Load[4]);
+            P[2].x=stoi(Fun_Load[5]);
+            P[2].y=stoi(Fun_Load[6]);
+            P[3].x=stoi(Fun_Load[7]);
+            P[3].y=stoi(Fun_Load[8]);
+            P[4].x=stoi(Fun_Load[9]);
+            P[4].y=stoi(Fun_Load[10]);
+            Polygon(hdc, P, 5);
+            GeneralPolygonFill(hdc, P, 5,c );
+            Save_Point x(Fun_Load[0],stoi(Fun_Load[1]),stoi(Fun_Load[2]),stoi(Fun_Load[3]),stoi(Fun_Load[4]),stoi(Fun_Load[5]),stoi(Fun_Load[6]),stoi(Fun_Load[7]), stoi(Fun_Load[8]),stoi(Fun_Load[9]),stoi(Fun_Load[10])
+                         ,stoi(Fun_Load[11]),stoi(Fun_Load[12]),stoi(Fun_Load[13]));
+            Arr_Save_Point.push_back(x);
+
+        }
+
         /* Load Function of ALL Ellipse */
 
         if(Fun_Load[0]=="DDEllipse")
@@ -988,6 +1430,37 @@ void Load(HDC hdc)
         }
     }
 }
+//////////////////////////////FLOODFILL////////////////////
+
+void FloodFill(HDC hdc,int x,int y,COLORREF Cb,COLORREF Cf)
+{
+    COLORREF C=GetPixel(hdc,x,y);
+    if(C==Cb || C==Cf)return;
+    SetPixel(hdc,x,y,Cf);
+    FloodFill(hdc,x+1,y,Cb,Cf);
+    FloodFill(hdc,x-1,y,Cb,Cf);
+    FloodFill(hdc,x,y+1,Cb,Cf);
+    FloodFill(hdc,x,y-1,Cb,Cf);
+}
+void NRFloodFill(HDC hdc,int x,int y,COLORREF Cb,COLORREF Cf)
+{
+    stack<Vertex> S;
+    S.push(Vertex(x,y));
+    while(!S.empty())
+    {
+        Vertex v=S.top();
+        S.pop();
+        COLORREF c= GetPixel(hdc,v.x,v.y);
+        if(c==Cb || c==Cf)continue;
+        SetPixel(hdc,v.x,v.y,Cf);
+        S.push(Vertex(v.x+1,v.y));
+        S.push(Vertex(v.x-1,v.y));
+        S.push(Vertex(v.x,v.y+1));
+        S.push(Vertex(v.x,v.y-1));
+    }
+}
+
+
 
 
 //Clean Points//
@@ -1133,6 +1606,37 @@ void addMenu(HWND hwnd)
     AppendMenu(hwindow,MF_STRING,56,"Clipping by Polygon(Rectangle)");
     AppendMenu(hMenu,MF_POPUP,(UINT_PTR)hwindow,"Clipping");
 
+
+
+    HMENU hSq = CreateMenu();
+    AppendMenu(hSq,MF_STRING,57,"Black");
+    AppendMenu(hSq,MF_STRING,58,"Red");
+    AppendMenu(hSq,MF_STRING,59,"Blue");
+    AppendMenu(hSq,MF_STRING,60,"Green");
+    AppendMenu(hMenu,MF_POPUP,(UINT_PTR)hSq,"Fill Square Hermite");
+
+    HMENU hRec = CreateMenu();
+    AppendMenu(hRec,MF_STRING,61,"Black");
+    AppendMenu(hRec,MF_STRING,62,"Red");
+    AppendMenu(hRec,MF_STRING,63,"Blue");
+    AppendMenu(hRec,MF_STRING,64,"Green");
+    AppendMenu(hMenu,MF_POPUP,(UINT_PTR)hRec,"Fill Rectangle Bezier");
+
+    HMENU hConvex = CreateMenu();
+    AppendMenu(hConvex,MF_STRING,65,"Black");
+    AppendMenu(hConvex,MF_STRING,67,"Red");
+    AppendMenu(hConvex,MF_STRING,68,"Green");
+    AppendMenu(hConvex,MF_STRING,69,"Blue");
+    AppendMenu(hMenu,MF_POPUP,(UINT_PTR)hConvex,"Convex Filling");
+
+    HMENU hGenFill = CreateMenu();
+    AppendMenu(hGenFill,MF_STRING,70,"Black");
+    AppendMenu(hGenFill,MF_STRING,71,"Red");
+    AppendMenu(hGenFill,MF_STRING,72,"Green");
+    AppendMenu(hGenFill,MF_STRING,73,"Blue");
+    AppendMenu(hMenu,MF_POPUP,(UINT_PTR)hGenFill,"Non Convex Filling");
+
+
     HMENU hFillingByCircles = CreateMenu();
     AppendMenu(hFillingByCircles,MF_STRING,27,"Black");
     AppendMenu(hFillingByCircles,MF_STRING,28,"Red");
@@ -1151,19 +1655,28 @@ void addMenu(HWND hwnd)
     AppendMenu(cursorMenu, MF_STRING, 37, _T("Hourglass"));
     AppendMenu(hMenu, MF_POPUP, (UINT_PTR) cursorMenu, _T("Cursor"));
 
+    HMENU  FloodMenu  = CreateMenu();
+    AppendMenu(FloodMenu, MF_STRING, 74, _T("Recursive Flood Fill"));
+    AppendMenu(FloodMenu, MF_STRING, 75, _T("non-Recursive Flood Fill"));
+    AppendMenu(hMenu, MF_POPUP, (UINT_PTR) FloodMenu, _T("Flood Fill"));
+    HMENU CardinalSplines  = CreateMenu();
+    AppendMenu(CardinalSplines, MF_STRING, 76, _T("Cardinal Splines"));
+    AppendMenu(hMenu, MF_POPUP, (UINT_PTR) CardinalSplines, _T("Cardinal Splines"));
     SetMenu(hwnd,hMenu);
 }
 int Rc,Gc,Bc;
 COLORREF c = 0;
 COLORREF cF = 0;
-int x1,x2,x3;
-int y_1,y2,y3;
+int x1,x2,x3, x4, x5 ;
+int xz;
+int y_1,y2,y3, y4, y5, y=0;
 int r,r2;
 int R;
 int quarter;
 int m;
 int X_start,X_end,Y_start,Y_end,X_left,Y_top,X_right,Y_bottom;
 int counter_ell =0;
+int Num_of_Points2 = 0, index=0;
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     HDC hdc = GetDC(hwnd);
@@ -1173,6 +1686,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
     {
         x1 = LOWORD(lParam);
         y_1 = HIWORD(lParam);
+
+        if (index==0 && (m==57 || m==58 || m==59 || m==60 || m==61 || m==62 || m==63 || m==64))
+        {
+            xz = LOWORD(lParam);
+            y = HIWORD(lParam);
+            index=1;
+        }
+
 
         if (m == 50) //Line clipping (Rectangle)
         {
@@ -1361,7 +1882,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
         else if (m == 56) //clipping Polygon (Rectangle)
         {
 
-            point P[5];
+            //P[5];
 
             if(counter == 0)
             {
@@ -1393,8 +1914,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                 cout<<"Counter " <<counter<<endl;
                 X_end=LOWORD(lParam);  //P[1]
                 Y_end=HIWORD(lParam);
-                P[1].x= X_start;
-                P[1].y= Y_start;
+                P[1].x= X_end;
+                P[1].y= Y_end;
                 counter++;
             }
             else if (counter==4)
@@ -1402,8 +1923,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                 cout<<"Counter " <<counter<<endl;
                 X_end=LOWORD(lParam);  //P[1]
                 Y_end=HIWORD(lParam);
-                P[2].x= X_start;
-                P[2].y= Y_start;
+                P[2].x= X_end;
+                P[2].y= Y_end;
                 counter++;
             }
             else if (counter==5)
@@ -1411,18 +1932,19 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                 cout<<"Counter " <<counter<<endl;
                 X_end=LOWORD(lParam);  //P[1]
                 Y_end=HIWORD(lParam);
-                P[3].x= X_start;
-                P[3].y= Y_start;
+                P[3].x= X_end;
+                P[3].y= Y_end;
                 counter++;
             }
             else if (counter==6)
             {
+
                 X_end=LOWORD(lParam);  //P[1]
                 Y_end=HIWORD(lParam);
-                P[4].x= X_start;
-                P[4].y= Y_start;
+                P[4].x= X_end;
+                P[4].y= Y_end;
                 PolygonClip(hdc, P,5,X_left, Y_top, X_right, Y_bottom);
-                counter++;
+                counter=0;
             }
         }
 
@@ -1539,6 +2061,52 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
     case WM_RBUTTONDOWN:
         x2 = LOWORD(lParam);
         y2 = HIWORD(lParam);
+
+        if (index==1 && (m==57 || m==58 ||  m==59 || m==60 || m==61 || m==62 || m==63 || m==64 ))
+        {
+            x2 = LOWORD(lParam);
+            y2 = HIWORD(lParam);
+            if(m==57)
+            {
+
+                Save_Point x("DSqHer",x1,y_1,x2,y_1,0,0,0, 0, 0, 0);
+                Arr_Save_Point.push_back(x);
+
+                DrawSquare(hdc,x1, y_1,x2, y_1, RGB(0, 0, 0), RGB(0, 0, 0) );
+                cout<< "Draw Square and filling with Hermite curve (Black) is done "<< endl;
+                index=0;
+
+            }
+            else if(m==58)
+            {
+                Save_Point x("DSqHer",x1,y_1,x2,y_1,0,0,0, 255, 0, 0);
+                Arr_Save_Point.push_back(x);
+                DrawSquare(hdc,x1, y_1,x2, y_1, RGB(0, 0, 0), RGB(255, 0, 0) );
+                cout<< "Draw Square and filling with Hermite curve (Red) is done "<< endl;
+                index=0;
+            }
+            else if(m==60)
+            {
+                Save_Point x("DSqHer",x1,y_1,x2,y_1,0,0,0, 0, 255, 0);
+                Arr_Save_Point.push_back(x);
+                DrawSquare(hdc,x1, y_1,x2, y_1, RGB(0, 0, 0), RGB(0, 255, 0) );
+                cout<< "Draw Square and filling with Hermite curve (Green) is done "<< endl;
+                index=0;
+            }
+            else if(m==59)
+            {
+                Save_Point x("DSqHer",x1,y_1,x2,y_1,0,0,0, 0, 0, 255);
+                Arr_Save_Point.push_back(x);
+                DrawSquare(hdc,x1, y_1,x2, y_1, RGB(0, 0, 0), RGB(0, 0, 255) );
+                cout<< "Draw Square and filling with Hermite curve (Blue) is done "<< endl;
+                index=0;
+            }
+            else
+            {
+                index=2;
+            }
+        }
+
 
         if (m == 7 || m == 8 || m == 9 || m == 26)
         {
@@ -1782,6 +2350,73 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
         }
 
+        else if (m==74)
+        {
+            int start_x=LOWORD(lParam);
+            int start_y=HIWORD(lParam);
+            cout<<"Recursive Flodding Done!\n";
+            FloodFill(hdc, start_x,start_y,c, RGB(216,191,216));
+
+        }
+        else if (m==75)
+        {
+            int start_x=LOWORD(lParam);
+            int start_y=HIWORD(lParam);
+            cout<<"Non-Recursive Flodding Done!\n";
+            NRFloodFill(hdc, start_x,start_y,c, RGB(216,191,216));
+
+        }
+        else if(m==76)
+        {
+
+            if(counter==0)
+            {
+                cout<<"C:"<<counter<<endl;
+                X_start=LOWORD(lParam);
+                Y_start=HIWORD(lParam);
+                Vec[0].x = X_start;
+                Vec[0].y =Y_start;
+                counter++;
+            }
+            else if(counter==1)
+            {
+                cout<<"C:"<<counter<<endl;
+                X_start=LOWORD(lParam);
+                Y_start=HIWORD(lParam);
+                Vec[1].x = X_start;
+                Vec[1].y =Y_start;
+                counter++;
+            }
+            else if(counter==2)
+            {
+                cout<<"C:"<<counter<<endl;
+                X_start=LOWORD(lParam);
+                Y_start=HIWORD(lParam);
+                Vec[2].x = X_start;
+                Vec[2].y =Y_start;
+                counter++;
+            }
+            else if(counter==3)
+            {
+                cout<<"C:"<<counter<<endl;
+
+                X_start=LOWORD(lParam);
+                Y_start=HIWORD(lParam);
+                Vec[3].x = X_start;
+                Vec[3].y =Y_start;
+                counter++;
+            }
+            else if(counter==4)
+            {
+                cout<<"C:"<<counter<<endl;
+                X_start=LOWORD(lParam);
+                Y_start=HIWORD(lParam);
+                Vec[4].x = X_start;
+                Vec[4].y =Y_start;
+                counter=0;
+                DrawCardinalSpline(hdc, Vec, 5,0.5, 20);
+            }
+        }
 
 
         else if (m == 2) //DDA Line
@@ -1885,6 +2520,169 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
             cout<<"Draw parametric line Done !"<< endl;
         }
 
+        break;
+
+    case WM_LBUTTONDBLCLK:
+
+        if(index==2)
+        {
+            x3=LOWORD(lParam);
+            y3=HIWORD(lParam);
+
+            if(m==61)
+            {
+                Save_Point x("DRecBez",xz,y,x2,y,x2,y3,0,0,0, 0,0,0);
+                Arr_Save_Point.push_back(x);
+
+                DrawRectangle(hdc, xz, y, x2, y, x2, y3, RGB(0, 0, 0), RGB(0, 0, 0));
+                cout<< "Draw Rectangle and filling with Bezier curve (Black) is done. "<< endl;
+                index=0;
+
+            }
+            else if(m==62)
+            {
+                Save_Point x("DRecBez",xz,y,x2,y,x2, y3,0,0,0, 255, 0, 0);
+                Arr_Save_Point.push_back(x);
+                DrawRectangle(hdc, xz, y, x2, y, x2, y3, RGB(0, 0, 0), RGB(255, 0, 0));
+                cout<< "Draw Rectangle and filling with Bezier curve (Red) is done. "<< endl;
+                index=0;
+            }
+            else if(m==64)
+            {
+                Save_Point x("DRecBez",xz,y,x2,y, x2, y3,0,0,0, 0,255,0);
+                Arr_Save_Point.push_back(x);
+                DrawRectangle(hdc, xz, y, x2, y, x2, y3, RGB(0, 0, 0), RGB(0, 255, 0));
+                cout<< "Draw Rectangle and filling with Bezier curve (Green) is done. "<< endl;
+                index=0;
+            }
+            else if(m==63)
+            {
+                Save_Point x("DRecBez",xz,y,x2,y, x2,y3,0,0,0, 0, 0, 255);
+                Arr_Save_Point.push_back(x);
+                DrawRectangle(hdc, xz, y, x2, y, x2, y3, RGB(0, 0, 0), RGB(0, 0, 255));
+                cout<< "Draw Rectangle and filling with Bezier curve (Blue) is done "<< endl;
+                index=0;
+            }
+
+
+            //ReleaseDC(hwnd, hdc);
+        }
+        else if(m==65 || m==66 || m==67 || m==68 || m==69 || m==70 || m==71 || m==72 )
+        {
+            if(Num_of_Points2==0)
+            {
+                x1=LOWORD(lParam);
+                y_1=HIWORD(lParam);
+                Num_of_Points2++;
+            }
+            else if(Num_of_Points2==1)
+            {
+                x2=LOWORD(lParam);
+                y2=HIWORD(lParam);
+                Num_of_Points2++;
+            }
+            else if(Num_of_Points2==2)
+            {
+                x3=LOWORD(lParam);
+                y3=HIWORD(lParam);
+                Num_of_Points2++;
+            }
+            else if(Num_of_Points2==3)
+            {
+                x4=LOWORD(lParam);
+                y4=HIWORD(lParam);
+                Num_of_Points2++;
+            }
+            else if(Num_of_Points2==4)
+            {
+                x5=LOWORD(lParam);
+                y5=HIWORD(lParam);
+                Polygon(hdc, P, 5);
+                Num_of_Points2++;
+            }
+
+            else if(Num_of_Points2==5)
+            {
+                P[0].x=x1;
+                P[0].y=y_1;
+                P[1].x=x2;
+                P[1].y=y2;
+                P[2].x=x3;
+                P[2].y=y3;
+                P[3].x=x4;
+                P[3].y=y4;
+                P[4].x=x5;
+                P[4].y=y5;
+
+                if (m==65)
+                {
+                    Save_Point x("ConvexFill",x1,y_1,x2,y2, x3,y3, x4,y4, x5, y5,0,0,0 );
+                    Arr_Save_Point.push_back(x);
+                    //Polygon(hdc, P, 5);
+                    ConvexFill(hdc, P, 5, RGB(0, 0, 0));
+                    cout<< "Convex filling (Black) is done "<< endl;
+                }
+                else if (m==66)
+                {
+                    Save_Point x("ConvexFill",x1,y_1,x2,y2, x3,y3, x4,y4, x5, y5,255,0,0 );
+                    Arr_Save_Point.push_back(x);
+                    //Polygon(hdc, P, 5);
+                    ConvexFill(hdc, P, 5, RGB(255, 0, 0));
+                    cout<< "Convex filling (Red) is done "<< endl;
+                }
+                else if (m==67)
+                {
+                    Save_Point x("ConvexFill",x1,y_1,x2,y2, x3,y3, x4,y4, x5, y5,0,255,0 );
+                    Arr_Save_Point.push_back(x);
+                    //Polygon(hdc, P, 5);
+                    ConvexFill(hdc, P, 5, RGB(0, 255, 0));
+                    cout<< "Convex filling (Green) is done "<< endl;
+                }
+                else if (m==68)
+                {
+                    Save_Point x("ConvexFill",x1,y_1,x2,y2, x3,y3, x4,y4, x5, y5,0,0,255);
+                    Arr_Save_Point.push_back(x);
+                    //Polygon(hdc, P, 5);
+                    ConvexFill(hdc, P, 5, RGB(0, 0, 255));
+                    cout<< "Convex filling (Blue) is done "<< endl;
+                }
+                else if (m==69)
+                {
+                    Save_Point x("GenFill",x1,y_1,x2,y2, x3,y3, x4,y4, x5, y5,0,0,0);
+                    Arr_Save_Point.push_back(x);
+                    //Polygon(hdc, P, 5);
+                    GeneralPolygonFill(hdc, P, 5, RGB(0, 0, 0));
+                    cout<< "Non Convex filling (Black) is done "<< endl;
+                }
+                else if (m==70)
+                {
+                    Save_Point x("GenFill",x1,y_1,x2,y2, x3,y3, x4,y4, x5, y5,255,0,0);
+                    Arr_Save_Point.push_back(x);
+                    //Polygon(hdc, P, 5);
+                    GeneralPolygonFill(hdc, P, 5, RGB(255, 0, 0));
+                    cout<< "Non Convex filling (Red) is done "<< endl;
+                }
+                else if (m==71)
+                {
+                    Save_Point x("GenFill",x1,y_1,x2,y2, x2,y3, x4,y4, x5, y5,0,255,0);
+                    Arr_Save_Point.push_back(x);
+                    //Polygon(hdc, P, 5);
+                    GeneralPolygonFill(hdc, P, 5, RGB(0, 255, 0));
+                    cout<< "Non Convex filling (Green) is done "<< endl;
+                }
+                else if (m==72)
+                {
+                    Save_Point x("GenFill",x1,y_1,x2,y2, x3,y3, x4,y4, x5, y5,0,0,255);
+                    Arr_Save_Point.push_back(x);
+                    //Polygon(hdc, P, 5);
+                    GeneralPolygonFill(hdc, P, 5, RGB(0, 0, 255));
+                    cout<< "Non Convex filling (Blue) is done "<< endl;
+                }
+                Num_of_Points2=0;
+            }
+        }
+
+        ReleaseDC(hwnd, hdc);
         break;
 
     case WM_CREATE:
@@ -2071,6 +2869,88 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
         case (37):
             curs = IDC_WAIT;
             m = 37;
+            break;
+        case(57):
+            m=57;
+            cout<<"Draw square and Filling Black (Hermite) \n\n";
+            break;
+        case(58):
+            m=58;
+            cout<<"Draw square and Filling Red (Hermite) \n\n";
+            break;
+        case(59):
+            m=59;
+            cout<<"Draw square and Filling Blue (Hermite) \n\n";
+            break;
+        case(60):
+            m=60;
+            cout<<"Draw square and Filling Green (Hermite) \n\n";
+            break;
+
+        case(61):
+            m=61;
+            cout<<"Draw Rectangle and Filling Black (Bezier) \n\n";
+            break;
+        case(62):
+            m=62;
+            cout<<"Draw Rectangle and Filling Red (Bezier) \n\n";
+            break;
+        case(63):
+            m=63;
+            cout<<"Draw Rectangle and Filling Blue (Bezier) \n\n";
+            break;
+        case(64):
+            m=64;
+            cout<<"Draw Rectangle and Filling Green (Bezier) \n\n";
+            break;
+
+        case(65):
+            m=65;
+            cout<<"Convex filling Polygon Black \n\n";
+            break;
+        case(66):
+            m=66;
+            cout<<"Convex filling Polygon Red \n\n";
+            break;
+        case(67):
+            m=67;
+            cout<<"Convex filling Polygon Green \n\n";
+            break;
+        case(68):
+            m=68;
+            cout<<"Convex filling Polygon Blue \n\n";
+            break;
+
+        case(69):
+            m=69;
+            cout<<"Non Convex filling Polygon Black \n\n";
+            break;
+        case(70):
+            m=70;
+            cout<<"Non Convex filling Polygon Red \n\n";
+            break;
+        case(71):
+            m=71;
+            cout<<"Non Convex filling Polygon Green \n\n";
+            break;
+        case(72):
+            m=72;
+            cout<<"Non Convex filling Polygon Blue \n\n";
+            break;
+
+        case(74):
+            m=74;
+            cout<<"Flood Fill Recursive\n\n";
+            break;
+
+        case(75):
+            m=75;
+            cout<<"Flood Fill Non Recursive\n\n";
+            break;
+
+        case(76):
+            m=76;
+            cout<<" Cardinal Spline Curve\n\n";
             break;
         default:
             m = LOWORD(wParam);
