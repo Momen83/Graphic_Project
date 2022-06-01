@@ -1187,6 +1187,28 @@ struct Save_Point
         this->Bc2=Bc2;
     }
 
+       Save_Point(string Function_Name,int x1,int y1,int x2,int y2, int x3, int y3, int x4, int y4, int x5, int y5, int Rc,int Gc,int Bc )  // cardinal spline curve
+    {
+        this->Function_Name=Function_Name;
+        this->x1=x1;
+        this->x2=x2;
+        this->x3=x3;
+        this->x4=x4;
+        this->x5=x5;
+
+        this->y1=y1;
+        this->y2=y2;
+        this->y3=y3;
+        this->y4=y4;
+        this->y5=y5;
+
+        this->Rc=Rc;
+        this->Gc=Gc;
+        this->Bc=Bc;
+
+
+    }
+
 };
 
 
@@ -1284,6 +1306,13 @@ void Save()
         else if(it->Function_Name=="NonFillRecursive")
         {
              data+=it->Function_Name+","+to_string(it->x1)+","+to_string(it->y1)+","+to_string(it->Rc)+","+to_string(it->Gc)+","+to_string(it->Bc)+","+to_string(it->Rc2)+","+to_string(it->Gc2)+","+to_string(it->Bc2)+"\n";
+        }
+
+        else if(it->Function_Name=="CardSpline")
+        {
+            data += (it->Function_Name+ ","+to_string(it->x1)+","+to_string(it->y1)+","+to_string(it->x2)+
+                     ","+to_string(it->y2)+","+to_string(it->x3)+","+to_string(it->y3)+ ","+to_string(it->x4)+","+to_string(it->y4) + ","+to_string(it->x5)+","+to_string(it->y5)
+                     +","+to_string(it->Rc)+","+to_string(it->Gc)+","+to_string(it->Bc)+"\n");
         }
     }
     ofstream myfile;
@@ -1475,6 +1504,29 @@ void Load(HDC hdc)
 
          }
 
+         else  if(Fun_Load[0]=="CardSpline")
+        {
+            //stoi() is a function to covert string to integer
+            COLORREF c =RGB(stoi(Fun_Load[11]),stoi(Fun_Load[12]),stoi(Fun_Load[13]));
+            Vector2 Vec[5];
+            Vec[0].x=stoi(Fun_Load[1]);
+            Vec[0].y=stoi(Fun_Load[2]);
+            Vec[1].x=stoi(Fun_Load[3]);
+            Vec[1].y=stoi(Fun_Load[4]);
+            Vec[2].x=stoi(Fun_Load[5]);
+            Vec[2].y=stoi(Fun_Load[6]);
+            Vec[3].x=stoi(Fun_Load[7]);
+            Vec[3].y=stoi(Fun_Load[8]);
+            Vec[4].x=stoi(Fun_Load[9]);
+            Vec[4].y=stoi(Fun_Load[10]);
+
+            DrawCardinalSpline(hdc, Vec, 5 , 0.5,50);
+            Save_Point x(Fun_Load[0],stoi(Fun_Load[1]),stoi(Fun_Load[2]),stoi(Fun_Load[3]),stoi(Fun_Load[4]),stoi(Fun_Load[5]),stoi(Fun_Load[6]),stoi(Fun_Load[7]), stoi(Fun_Load[8]),stoi(Fun_Load[9]),stoi(Fun_Load[10])
+                         ,stoi(Fun_Load[11]),stoi(Fun_Load[12]),stoi(Fun_Load[13]));
+            Arr_Save_Point.push_back(x);
+
+        }
+
 
 
         /* Load Function of ALL Ellipse */
@@ -1502,6 +1554,7 @@ void Load(HDC hdc)
             Save_Point x(Fun_Load[0],stoi(Fun_Load[1]),stoi(Fun_Load[2]),stoi(Fun_Load[3]),stoi(Fun_Load[4]),stoi(Fun_Load[5]),stoi(Fun_Load[6]),stoi(Fun_Load[7]),stoi(Fun_Load[8]),stoi(Fun_Load[9]),stoi(Fun_Load[10]),stoi(Fun_Load[11]));
             Arr_Save_Point.push_back(x);
         }
+
     }
 }
 
