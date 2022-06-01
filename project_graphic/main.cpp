@@ -1004,6 +1004,39 @@ void GeneralPolygonFill(HDC hdc,POINT *polygon,int n,COLORREF c)
     }
     delete[] table;
 }
+
+//////////////////////////////FLOODFILL////////////////////
+
+void FloodFill(HDC hdc,int x,int y,COLORREF Cb,COLORREF Cf)
+{
+    COLORREF C=GetPixel(hdc,x,y);
+    if(C==Cb || C==Cf)return;
+    SetPixel(hdc,x,y,Cf);
+    FloodFill(hdc,x+1,y,Cb,Cf);
+    FloodFill(hdc,x-1,y,Cb,Cf);
+    FloodFill(hdc,x,y+1,Cb,Cf);
+    FloodFill(hdc,x,y-1,Cb,Cf);
+}
+void NRFloodFill(HDC hdc,int x,int y,COLORREF Cb,COLORREF Cf)
+{
+    stack<Vertex> S;
+    S.push(Vertex(x,y));
+    while(!S.empty())
+    {
+        Vertex v=S.top();
+        S.pop();
+        COLORREF c= GetPixel(hdc,v.x,v.y);
+        if(c==Cb || c==Cf)continue;
+        SetPixel(hdc,v.x,v.y,Cf);
+        S.push(Vertex(v.x+1,v.y));
+        S.push(Vertex(v.x-1,v.y));
+        S.push(Vertex(v.x,v.y+1));
+        S.push(Vertex(v.x,v.y-1));
+    }
+}
+
+
+
 POINT P[5];
 Vector2 Vec[5];
 /////////////////////////////////////////////
@@ -1141,6 +1174,18 @@ struct Save_Point
         this->Bc=Bc;
         this->quarter=quarter;
     }
+    Save_Point(string Function_Name,int x1,int y1,int Rc,int Gc,int Bc,int Rc2,int Gc2,int Bc2) // For filling recursive and non recursive
+    {
+        this->Function_Name=Function_Name;
+        this->x1=x1;
+        this->y1=y1;
+        this->Rc=Rc;
+        this->Gc=Gc;
+        this->Bc=Bc;
+        this->Rc2=Rc2;
+        this->Gc2=Gc2;
+        this->Bc2=Bc2;
+    }
 
 };
 
@@ -1231,7 +1276,15 @@ void Save()
         {
             data += it->Function_Name+ ","+to_string(it->x1)+","+to_string(it->y1)+","+to_string(it->x2)+","+to_string(it->y2)+","+to_string(it->xleft)+","+to_string(it->ytop)+","+to_string(it->xright)+","+to_string(it->ybottom)+","+to_string(it->Rc)+","+to_string(it->Gc)+","+to_string(it->Bc)+"\n";
         }
-
+            /*save Function of  filling recursive and non recursive  */
+        if(it->Function_Name=="FillRecursive")
+        {
+            data+=it->Function_Name+","+to_string(it->x1)+","+to_string(it->y1)+","+to_string(it->Rc)+","+to_string(it->Gc)+","+to_string(it->Bc)+"\n";
+        }
+        else if(it->Function_Name=="NonFillRecursive")
+        {
+             data+=it->Function_Name+","+to_string(it->x1)+","+to_string(it->y1)+","+to_string(it->Rc)+","+to_string(it->Gc)+","+to_string(it->Bc)+","+to_string(it->Rc2)+","+to_string(it->Gc2)+","+to_string(it->Bc2)+"\n";
+        }
     }
     ofstream myfile;
     myfile.open ("Graphics.txt");
@@ -1402,6 +1455,27 @@ void Load(HDC hdc)
             Arr_Save_Point.push_back(x);
 
         }
+        /* Load Function of  filling recursive and non recursive */
+         if(Fun_Load[0]=="FillRecursive")
+         {
+              COLORREF c =RGB(stoi(Fun_Load[3]),stoi(Fun_Load[4]),stoi(Fun_Load[5]));
+               COLORREF c2 =RGB(stoi(Fun_Load[6]),stoi(Fun_Load[7]),stoi(Fun_Load[8]));
+              FloodFill(hdc,stoi(Fun_Load[1]),stoi(Fun_Load[2]),c,c2);
+            Save_Point x(Fun_Load[0],stoi(Fun_Load[1]),stoi(Fun_Load[2]),stoi(Fun_Load[3]),stoi(Fun_Load[4]),stoi(Fun_Load[5]),stoi(Fun_Load[6]),stoi(Fun_Load[7]),stoi(Fun_Load[8]));
+            Arr_Save_Point.push_back(x);
+
+         }
+        if(Fun_Load[0]=="NonFillRecursive")
+         {
+              COLORREF c =RGB(stoi(Fun_Load[3]),stoi(Fun_Load[4]),stoi(Fun_Load[5]));
+              COLORREF c2 =RGB(stoi(Fun_Load[6]),stoi(Fun_Load[7]),stoi(Fun_Load[8]));
+             NRFloodFill(hdc,stoi(Fun_Load[1]),stoi(Fun_Load[2]),c,c2);
+            Save_Point x(Fun_Load[0],stoi(Fun_Load[1]),stoi(Fun_Load[2]),stoi(Fun_Load[3]),stoi(Fun_Load[4]),stoi(Fun_Load[5]),stoi(Fun_Load[6]),stoi(Fun_Load[7]),stoi(Fun_Load[8]));
+            Arr_Save_Point.push_back(x);
+
+         }
+
+
 
         /* Load Function of ALL Ellipse */
 
@@ -1430,37 +1504,6 @@ void Load(HDC hdc)
         }
     }
 }
-//////////////////////////////FLOODFILL////////////////////
-
-void FloodFill(HDC hdc,int x,int y,COLORREF Cb,COLORREF Cf)
-{
-    COLORREF C=GetPixel(hdc,x,y);
-    if(C==Cb || C==Cf)return;
-    SetPixel(hdc,x,y,Cf);
-    FloodFill(hdc,x+1,y,Cb,Cf);
-    FloodFill(hdc,x-1,y,Cb,Cf);
-    FloodFill(hdc,x,y+1,Cb,Cf);
-    FloodFill(hdc,x,y-1,Cb,Cf);
-}
-void NRFloodFill(HDC hdc,int x,int y,COLORREF Cb,COLORREF Cf)
-{
-    stack<Vertex> S;
-    S.push(Vertex(x,y));
-    while(!S.empty())
-    {
-        Vertex v=S.top();
-        S.pop();
-        COLORREF c= GetPixel(hdc,v.x,v.y);
-        if(c==Cb || c==Cf)continue;
-        SetPixel(hdc,v.x,v.y,Cf);
-        S.push(Vertex(v.x+1,v.y));
-        S.push(Vertex(v.x-1,v.y));
-        S.push(Vertex(v.x,v.y+1));
-        S.push(Vertex(v.x,v.y-1));
-    }
-}
-
-
 
 
 //Clean Points//
@@ -2355,6 +2398,21 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
             int start_x=LOWORD(lParam);
             int start_y=HIWORD(lParam);
             cout<<"Recursive Flodding Done!\n";
+            int R=0,G=0,B=0;
+            if(c==RGB(0,255,0))
+            {
+               G=255;
+            }
+            if(c==RGB(0,0,255))
+          {
+                    B=255;
+          }
+          if(c==RGB(255,0,0))
+          {
+               R=255;
+          }
+           Save_Point x("FillRecursive",start_x,start_y,R,G,B,216,191,216);
+            Arr_Save_Point.push_back(x);
             FloodFill(hdc, start_x,start_y,c, RGB(216,191,216));
 
         }
@@ -2363,6 +2421,21 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
             int start_x=LOWORD(lParam);
             int start_y=HIWORD(lParam);
             cout<<"Non-Recursive Flodding Done!\n";
+             int R=0,G=0,B=0;
+            if(c==RGB(0,255,0))
+            {
+               G=255;
+            }
+            if(c==RGB(0,0,255))
+          {
+                    B=255;
+          }
+          if(c==RGB(255,0,0))
+          {
+               R=255;
+          }
+            Save_Point x("NonFillRecursive",start_x,start_y,R,G,B,216,191,216);
+            Arr_Save_Point.push_back(x);
             NRFloodFill(hdc, start_x,start_y,c, RGB(216,191,216));
 
         }
